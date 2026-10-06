@@ -1082,7 +1082,19 @@ function normalizeSpecialtyLabel(v){
 function specialtyOptions(selected=''){
   const dynamic=[...state.professionals.map(x=>x.specialty),...state.services.map(x=>x.specialty)]
     .map(normalizeSpecialtyLabel).filter(Boolean);
-  const base=['Clínica Geral','Enfermagem','Estética','Fisioterapia','Medicina','Nutrição','Odontologia','Psicologia','Outra'];
+  const base=[
+    'Medicina',
+    'Nutrição',
+    'Psicanálise',
+    'Terapia Capilar',
+    'Clínica Geral',
+    'Enfermagem',
+    'Estética',
+    'Fisioterapia',
+    'Psicologia',
+    'Odontologia',
+    'Outra'
+  ];
   const values=[...new Set([...base,...dynamic])];
   const current=normalizeSpecialtyLabel(selected);
   return '<option value="">Selecione</option>'+values.map(v=>`<option value="${escapeHtml(v)}" ${v===current?'selected':''}>${escapeHtml(v)}</option>`).join('');
