@@ -34,20 +34,70 @@ const viewMeta = {
   help:['Ajuda','Guia rápido para a equipe usar o sistema.','+ Novo agendamento','appointment']
 };
 
-boot();
+boot().catch(handleBootError);
 
 async function boot(){
-  setTheme(localStorage.getItem('clinicTheme')||document.documentElement.dataset.theme||'rose',false);
-  el('clinicName').textContent = cfg.CLINIC_NAME || 'Gestão Clínica';
+  try{
+    setTheme(localStorage.getItem('clinicTheme')||document.documentElement.dataset.theme||'rose',false);
+  }catch(_e){
+    document.documentElement.dataset.theme='rose';
+  }
+
+  if(el('clinicName')) el('clinicName').textContent = cfg.CLINIC_NAME || 'Gestão Clínica';
   setDefaultMonths();
   bindEvents();
-  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){ showOnly('setupScreen'); return; }
-  const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-  supabase = createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+
+  // Nunca deixar o usuário olhando para uma tela branca enquanto o Supabase carrega.
+  showOnly('loginScreen');
+
+  if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
+    showOnly('setupScreen');
+    return;
+  }
+
+  let createClient;
+  try{
+    ({createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+  }catch(primaryErr){
+    try{
+      ({createClient}=await import('https://esm.sh/@supabase/supabase-js@2'));
+    }catch(fallbackErr){
+      throw new Error('Não foi possível carregar a conexão do sistema. Recarregue a página em alguns segundos.');
+    }
+  }
+
+  supabase = createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{
+    auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+  });
+
   const {data:{session}} = await supabase.auth.getSession();
-  if(session){ await enterApp(session.user); } else { showOnly('loginScreen'); await refreshBootstrapState(); }
-  supabase.auth.onAuthStateChange(async (_evt,session)=>{ if(!session){ currentUser=null; showOnly('loginScreen'); } });
+  if(session){
+    await enterApp(session.user);
+  }else{
+    showOnly('loginScreen');
+    await refreshBootstrapState();
+  }
+
+  supabase.auth.onAuthStateChange(async (_evt,session)=>{
+    if(!session){
+      currentUser=null;
+      showOnly('loginScreen');
+    }
+  });
+
   setTimeout(refreshIcons,80);
+}
+
+function handleBootError(err){
+  console.error('Falha ao iniciar o sistema:',err);
+  try{showOnly('loginScreen');}catch(_e){}
+  const box=el('loginError');
+  if(box){
+    box.textContent=err?.message||'Não foi possível iniciar o sistema. Recarregue a página.';
+    box.classList.remove('hidden');
+  }else{
+    document.body.innerHTML='<div style="padding:32px;font-family:Arial,sans-serif;color:#0f172a"><h2>Não foi possível iniciar o sistema</h2><p>Recarregue a página em alguns segundos.</p></div>';
+  }
 }
 
 function showOnly(id){ ['setupScreen','loginScreen','app'].forEach(x=>el(x).classList.add('hidden')); el(id).classList.remove('hidden'); }
