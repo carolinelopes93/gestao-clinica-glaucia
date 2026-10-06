@@ -848,12 +848,6 @@ async function handleCashAction(action){
   }
 }
 function printCashSummary(){setFinanceTab('cash');setTimeout(()=>window.print(),80)}
-async function registerPaidInCash(receivable){
-  const session=currentCashSession();
-  if(!session||session.status!=='OPEN'||!receivable)return;
-  const {error}=await supabase.from('cash_movements').insert({session_id:session.id,movement_date:todayISO(),movement_type:'RECEIPT',payment_method:receivable.payment_method||'OUTRO',amount:Number(receivable.amount||0),description:(receivable.patient_name?receivable.patient_name+' • ':'')+(receivable.description||'Recebimento'),source_type:'receivable',source_id:receivable.id,user_id:currentUser.id,user_name:currentProfile?.full_name||currentUser.email});
-  if(error && !String(error.message||'').toLowerCase().includes('duplicate')) throw error;
-}
 function renderHelpSearch(){
   const q=(el('helpSearch')?.value||'').trim().toLowerCase();
   let visible=0;
@@ -1280,20 +1274,6 @@ async function saveModal(e){
       :await supabase.from(table).insert(payload).select().maybeSingle();
     if(res.error) throw res.error;
     const saved=res.data;
-    if(type==='receivable' && payload.status==='PAGO' && saved) await registerPaidInCash(saved);
-    if(type==='application' && payload.payment_status==='PAGO' && saved){
-      const session=currentCashSession();
-      if(session?.status==='OPEN'){
-        const {error:cashErr}=await supabase.from('cash_movements').insert({
-          session_id:session.id,movement_date:todayISO(),movement_type:'RECEIPT',
-          payment_method:payload.payment_method||'OUTRO',amount:Number(payload.amount||0),
-          description:(payload.patient_name?payload.patient_name+' • ':'')+(payload.medication||'Aplicação'),
-          source_type:'application',source_id:saved.id,user_id:currentUser.id,
-          user_name:currentProfile?.full_name||currentUser.email
-        });
-        if(cashErr && !String(cashErr.message||'').toLowerCase().includes('duplicate')) throw cashErr;
-      }
-    }
     await audit(id?'UPDATE':'INSERT',table,id||saved?.id||'',payload);
     closeModal(); await loadAll(); toast('Registro salvo.');
   }catch(err){toast(err.message||'Erro ao salvar.',true);}finally{save.disabled=false;}
@@ -1311,7 +1291,6 @@ window.markPaid=async id=>{
   if(!receivable.payment_method)return toast('Informe a forma de pagamento antes de dar baixa.',true);
   const {error}=await supabase.from('receivables').update({status:'PAGO',paid_at:todayISO(),updated_at:new Date().toISOString()}).eq('id',id);
   if(error)return toast(error.message,true);
-  try{await registerPaidInCash({...receivable,status:'PAGO',paid_at:todayISO()});}catch(err){toast('Pagamento salvo, mas não foi possível lançar no caixa: '+err.message,true);}
   await audit('MARK_PAID','receivables',id,{payment_method:receivable.payment_method,amount:receivable.amount});
   await loadAll();toast('Pagamento registrado.');
 };
