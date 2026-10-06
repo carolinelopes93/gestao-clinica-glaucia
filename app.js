@@ -22,7 +22,7 @@ const viewMeta = {
   agenda:['Agenda','Consultas, retornos e aplicações.','+ Novo agendamento','appointment'],
   patients:['Pacientes','Cadastro e ficha dos pacientes.','+ Novo paciente','patient'],
   applications:['Aplicações','Histórico de medicação, dose e cobrança.','+ Nova aplicação','application'],
-  finance:['Financeiro','Resumo de entradas, despesas e saldo.','+ Nova aplicação','application'],
+  finance:['Financeiro','Resumo de entradas, despesas e saldo.','',''],
   receivables:['A Receber','Controle de valores pendentes e pagos.','+ Novo a receber','receivable'],
   expenses:['Despesas','Saídas e comprovantes.','+ Nova despesa','expense'],
   professionals:['Profissionais','Equipe clínica, especialidades e comissões.','+ Novo Profissional','professional'],
@@ -242,7 +242,7 @@ function switchView(v){
   el('pageSubtitle').textContent=meta[1];
   el('pageEyebrow').textContent=v==='dashboard'?'VISÃO GERAL':'GESTÃO CLÍNICA';
   el('topAction').textContent=meta[2];
-  el('topAction').classList.toggle('hidden',v==='reports');
+  el('topAction').classList.toggle('hidden',v==='reports'||v==='finance'||!meta[2]);
 
   render(v);
   refreshIcons();
