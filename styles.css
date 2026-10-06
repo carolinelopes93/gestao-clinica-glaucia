@@ -1066,3 +1066,128 @@ html[data-theme="rose"] .custom-options button:focus{
   background:#DCFCE7!important;
   border-color:#86EFAC!important;
 }
+
+
+/* ===== Seletor visual de mês/ano nos relatórios ===== */
+.report-month-control{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+}
+.month-calendar-btn{
+  width:34px;
+  height:100%;
+  border:0;
+  border-left:1px solid var(--line);
+  background:transparent;
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.month-calendar-btn:hover{
+  background:var(--surface-3);
+  color:var(--text);
+}
+.month-calendar-btn svg{
+  width:15px;
+  height:15px;
+}
+.month-picker-popover{
+  position:absolute;
+  z-index:180;
+  top:calc(100% + 7px);
+  right:0;
+  width:250px;
+  padding:10px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:10px;
+  box-shadow:0 16px 40px rgba(15,23,42,.16);
+}
+.month-picker-head{
+  display:grid;
+  grid-template-columns:32px 1fr 32px;
+  align-items:center;
+  gap:6px;
+  margin-bottom:8px;
+}
+.month-picker-head strong{
+  text-align:center;
+  font-size:12px;
+  font-weight:700;
+  color:var(--text);
+}
+.month-picker-nav{
+  width:32px;
+  height:32px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--surface);
+  color:var(--muted);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+}
+.month-picker-nav:hover{
+  background:var(--surface-3);
+  color:var(--text);
+}
+.month-picker-nav svg{
+  width:14px;
+  height:14px;
+}
+.month-picker-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+}
+.month-picker-grid button{
+  min-height:34px;
+  border:1px solid transparent;
+  border-radius:7px;
+  background:var(--surface-2);
+  color:var(--text);
+  font-size:10px;
+  font-weight:600;
+  cursor:pointer;
+}
+.month-picker-grid button:hover{
+  border-color:var(--line);
+  background:var(--surface-3);
+}
+.month-picker-grid button.active{
+  background:var(--primary-soft);
+  border-color:var(--primary);
+  color:var(--primary-strong);
+}
+.month-picker-footer{
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px solid var(--line);
+}
+.month-picker-footer button{
+  width:100%;
+  min-height:32px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:var(--primary-strong);
+  font-size:9.5px;
+  font-weight:700;
+  cursor:pointer;
+}
+.month-picker-footer button:hover{
+  background:var(--primary-soft);
+}
+html[data-theme="rose"] .month-picker-grid button.active{
+  background:#FFF0F1;
+  border-color:#FF9EA3;
+  color:#7D2F38;
+}
+@media(max-width:720px){
+  .month-picker-popover{
+    right:auto;
+    left:0;
+  }
+}
