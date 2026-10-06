@@ -327,3 +327,119 @@ html[data-theme="rose"] .badge:not(.ok):not(.warn):not(.danger){
   width:0!important;
   height:0!important;
 }
+
+
+/* ===== Tema Rosa: ajuste solicitado ===== */
+html[data-theme="rose"]{
+  --bg:#F8FAFC;
+  --surface:#FFFFFF;
+  --surface-2:#FBFCFE;
+  --surface-3:#F1F5F9;
+  --text:#0F172A;
+  --muted:#475569;
+  --line:#E2E8F0;
+
+  --primary:#FF9EA3;
+  --primary-strong:#D85F68;
+  --primary-soft:rgba(255,158,163,.14);
+
+  --sidebar:#2D121B;
+  --sidebar-2:#25161C;
+  --sidebar-text:#FFFFFF;
+  --sidebar-muted:#D8DEE8;
+}
+
+html[data-theme="rose"] .sidebar{
+  background:linear-gradient(180deg,#2D121B 0%,#25161C 100%);
+  color:#FFFFFF;
+}
+
+html[data-theme="rose"] .brand strong,
+html[data-theme="rose"] .nav button,
+html[data-theme="rose"] .user-mini strong{
+  color:#FFFFFF;
+}
+
+html[data-theme="rose"] .brand small,
+html[data-theme="rose"] .nav-label,
+html[data-theme="rose"] .user-mini small,
+html[data-theme="rose"] .logout{
+  color:#D8DEE8;
+}
+
+html[data-theme="rose"] .nav button svg{
+  color:#E9DDE1;
+}
+
+html[data-theme="rose"] .nav button:hover{
+  background:rgba(255,255,255,.06);
+  color:#FFFFFF;
+}
+
+html[data-theme="rose"] .nav button:hover svg{
+  color:#FFB9BD;
+}
+
+html[data-theme="rose"] .nav button.active{
+  background:rgba(255,158,163,.12);
+  color:#FFFFFF;
+}
+
+html[data-theme="rose"] .nav button.active:before{
+  background:#FF9EA3;
+}
+
+html[data-theme="rose"] .nav button.active svg{
+  color:#FF9EA3;
+}
+
+/* ação principal */
+html[data-theme="rose"] .btn.primary{
+  background:#FF9EA3;
+  border-color:#FF9EA3;
+  color:#1E293B;
+  font-weight:800;
+}
+
+html[data-theme="rose"] .btn.primary:hover{
+  background:#F58F95;
+  border-color:#F58F95;
+  color:#0F172A;
+}
+
+/* agendamentos dentro do calendário */
+html[data-theme="rose"] .cal-chip{
+  background:rgba(255,158,163,.20);
+  color:#7D2F38;
+  border:1px solid #FF9EA3;
+}
+
+/* badges, tags e seleções do tema */
+html[data-theme="rose"] .quick-tabs button.active,
+html[data-theme="rose"] .module-tabs button.active,
+html[data-theme="rose"] .report-tabs button.active{
+  border-color:#FF9EA3;
+  box-shadow:inset 0 0 0 1px rgba(255,158,163,.28),0 1px 3px rgba(15,23,42,.08);
+}
+
+html[data-theme="rose"] input:focus,
+html[data-theme="rose"] select:focus,
+html[data-theme="rose"] textarea:focus{
+  border-color:#FF9EA3;
+  box-shadow:0 0 0 3px rgba(255,158,163,.20);
+}
+
+/* área principal neutra */
+html[data-theme="rose"] body,
+html[data-theme="rose"] .main,
+html[data-theme="rose"] .login-panel{
+  background:#F8FAFC;
+}
+
+html[data-theme="rose"] .panel,
+html[data-theme="rose"] .workspace,
+html[data-theme="rose"] .metric-card,
+html[data-theme="rose"] .overview-strip{
+  background:#FFFFFF;
+  border-color:#E2E8F0;
+}
