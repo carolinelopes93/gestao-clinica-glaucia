@@ -240,11 +240,60 @@ async function bootstrapFirstUser(){
 }
 
 async function login(e){
-  e.preventDefault(); const btn=el('loginBtn'); btn.disabled=true; el('loginError').classList.add('hidden');
-  const {data,error}=await supabase.auth.signInWithPassword({email:el('loginEmail').value.trim(),password:el('loginPassword').value});
-  btn.disabled=false;
-  if(error){ el('loginError').textContent='Não foi possível entrar. Confira o e-mail e a senha.';el('loginError').classList.remove('hidden');return; }
-  await enterApp(data.user);
+  e.preventDefault();
+  const btn=el('loginBtn');
+  const errorBox=el('loginError');
+  const email=el('loginEmail').value.trim();
+  const password=el('loginPassword').value;
+
+  errorBox.textContent='';
+  errorBox.classList.add('hidden');
+
+  if(!email || !password){
+    errorBox.textContent='Informe o e-mail e a senha.';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+
+  const originalText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Entrando...';
+
+  let timer;
+  try{
+    const loginPromise=supabase.auth.signInWithPassword({email,password});
+    const timeoutPromise=new Promise((_,reject)=>{
+      timer=setTimeout(()=>reject(new Error('TIMEOUT_LOGIN')),12000);
+    });
+
+    const {data,error}=await Promise.race([loginPromise,timeoutPromise]);
+
+    if(error){
+      const msg=String(error.message||'').toLowerCase();
+      if(msg.includes('invalid login')||msg.includes('invalid credentials')){
+        throw new Error('E-mail ou senha incorretos.');
+      }
+      if(msg.includes('email not confirmed')){
+        throw new Error('Este e-mail ainda precisa ser confirmado.');
+      }
+      throw error;
+    }
+
+    if(!data?.user){
+      throw new Error('Não foi possível carregar o usuário.');
+    }
+
+    await enterApp(data.user);
+  }catch(err){
+    let message=err?.message||'Não foi possível entrar.';
+    if(message==='TIMEOUT_LOGIN') message='A conexão demorou demais. Tente novamente.';
+    errorBox.textContent=message;
+    errorBox.classList.remove('hidden');
+  }finally{
+    clearTimeout(timer);
+    btn.disabled=false;
+    btn.textContent=originalText;
+  }
 }
 async function logout(){ await supabase.auth.signOut(); showOnly('loginScreen'); await refreshBootstrapState(); }
 function renderUserAvatars(){
