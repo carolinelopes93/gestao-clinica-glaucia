@@ -14,6 +14,7 @@ let currentProfile = null;
 let currentView = 'dashboard';
 let modalContext = null;
 let dashboardStatusFilter = 'ALL';
+let pendingProfilePhotoDataUrl = null;
 const state = {patients:[],agenda:[],applications:[],receivables:[],expenses:[],stock:[],reminders:[],stockMovements:[],users:[],professionals:[],services:[],cashSessions:[],cashMovements:[]};
 
 const viewMeta = {
@@ -61,6 +62,13 @@ function bindEvents(){
   el('exportExcelBtn')?.addEventListener('click',exportCurrentReportCsv);
   el('newUserBtn')?.addEventListener('click',()=>openUserForm());
   el('quickAppointmentBtn')?.addEventListener('click',()=>openForm('appointment'));
+  el('profilePhotoBtn')?.addEventListener('click',openProfilePhotoModal);
+  el('sidebarProfileBtn')?.addEventListener('click',openProfilePhotoModal);
+  el('chooseProfilePhotoBtn')?.addEventListener('click',()=>el('profilePhotoInput')?.click());
+  el('profilePhotoInput')?.addEventListener('change',previewProfilePhoto);
+  el('saveProfilePhotoBtn')?.addEventListener('click',saveProfilePhoto);
+  el('removeProfilePhotoBtn')?.addEventListener('click',removeProfilePhoto);
+  document.addEventListener('click',e=>{if(e.target.closest('[data-close-profile]')) closeProfilePhotoModal();});
   el('openCashBtn')?.addEventListener('click',()=>handleCashAction('open'));
   el('printCashBtn')?.addEventListener('click',()=>printCashSummary());
   el('themeButton')?.addEventListener('click',e=>{e.stopPropagation();el('themeMenu')?.classList.toggle('hidden');});
@@ -180,14 +188,32 @@ async function login(e){
   await enterApp(data.user);
 }
 async function logout(){ await supabase.auth.signOut(); showOnly('loginScreen'); await refreshBootstrapState(); }
+function renderUserAvatars(){
+  const name=(currentProfile?.full_name||currentUser?.email||'G').trim();
+  const initial=(name[0]||'G').toUpperCase();
+  const url=currentProfile?.avatar_url||'';
+  ['userAvatar','topUserAvatar','profilePhotoPreview'].forEach(id=>{
+    const node=el(id); if(!node)return;
+    node.textContent='';
+    node.classList.toggle('has-photo',!!url);
+    if(url){
+      const img=document.createElement('img');
+      img.src=url; img.alt='Foto de perfil';
+      node.appendChild(img);
+    }else{
+      node.textContent=initial;
+    }
+  });
+}
+
 async function enterApp(user){
   currentUser=user;
   const {data}=await supabase.from('profiles').select('*').eq('id',user.id).maybeSingle(); currentProfile=data||{full_name:user.email,role:'staff',active:true};
   if(currentProfile.active===false){ await supabase.auth.signOut(); toast('Usuário sem acesso ao sistema.',true); return; }
-  el('userName').textContent=currentProfile.full_name||user.email; el('userRole').textContent=(currentProfile.role||'Equipe').toUpperCase(); el('userAvatar').textContent=(currentProfile.full_name||user.email||'G')[0].toUpperCase();
+  el('userName').textContent=currentProfile.full_name||user.email; el('userRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
   if(el('topUserName')) el('topUserName').textContent=currentProfile.full_name||user.email;
   if(el('topUserRole')) el('topUserRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
-  if(el('topUserAvatar')) el('topUserAvatar').textContent=(currentProfile.full_name||user.email||'G')[0].toUpperCase();
+  renderUserAvatars();
   el('usersNavBtn')?.classList.toggle('hidden',currentProfile.role!=='admin');
   showOnly('app'); await loadAll();
 }
@@ -418,6 +444,51 @@ function exportCurrentReportCsv(){
   if(tab==='treatments'){headers=['Data','Paciente','Medicação','Dosagem','Valor'];rows=state.applications.filter(a=>String(a.date||'').startsWith(month)).map(a=>[a.date,a.patient_name,a.medication,[a.dose,a.dose_unit].filter(Boolean).join(' '),a.amount])}
   if(tab==='patients'){headers=['Paciente','Telefone','CPF','E-mail','Status'];rows=state.patients.map(p=>[p.name,p.phone,p.cpf,p.email,p.active===false?'INATIVO':'ATIVO'])}
   const csv=[headers,...rows].map(r=>r.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';')).join('\n'),blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`relatorio-${tab}-${month}.csv`;a.click();URL.revokeObjectURL(url);
+}
+function openProfilePhotoModal(){
+  pendingProfilePhotoDataUrl=null;
+  renderUserAvatars();
+  el('profileModal')?.classList.remove('hidden');
+  el('profileModal')?.setAttribute('aria-hidden','false');
+  refreshIcons();
+}
+function closeProfilePhotoModal(){
+  pendingProfilePhotoDataUrl=null;
+  if(el('profilePhotoInput')) el('profilePhotoInput').value='';
+  el('profileModal')?.classList.add('hidden');
+  el('profileModal')?.setAttribute('aria-hidden','true');
+}
+function previewProfilePhoto(e){
+  const file=e.target.files?.[0];
+  if(!file)return;
+  if(file.size>2*1024*1024){toast('Escolha uma foto com até 2 MB.',true);e.target.value='';return;}
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const size=Math.min(img.width,img.height), sx=(img.width-size)/2, sy=(img.height-size)/2;
+      const canvas=document.createElement('canvas'); canvas.width=256; canvas.height=256;
+      const ctx=canvas.getContext('2d'); ctx.drawImage(img,sx,sy,size,size,0,0,256,256);
+      pendingProfilePhotoDataUrl=canvas.toDataURL('image/jpeg',0.82);
+      const node=el('profilePhotoPreview'); if(node){node.textContent='';node.classList.add('has-photo');const p=document.createElement('img');p.src=pendingProfilePhotoDataUrl;p.alt='Prévia da foto';node.appendChild(p);}
+    };
+    img.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+async function saveProfilePhoto(){
+  if(!pendingProfilePhotoDataUrl)return toast('Escolha uma foto antes de salvar.',true);
+  const {error}=await supabase.from('profiles').update({avatar_url:pendingProfilePhotoDataUrl}).eq('id',currentUser.id);
+  if(error)return toast(error.message,true);
+  currentProfile.avatar_url=pendingProfilePhotoDataUrl;
+  renderUserAvatars(); closeProfilePhotoModal(); toast('Foto do perfil atualizada.');
+}
+async function removeProfilePhoto(){
+  const {error}=await supabase.from('profiles').update({avatar_url:null}).eq('id',currentUser.id);
+  if(error)return toast(error.message,true);
+  currentProfile.avatar_url=null; pendingProfilePhotoDataUrl=null; renderUserAvatars();
+  if(el('profilePhotoInput')) el('profilePhotoInput').value='';
+  toast('Foto removida.');
 }
 function refreshIcons(){try{window.lucide?.createIcons({attrs:{'stroke-width':1.8}});}catch(_e){}}
 function setTheme(theme,persist=true){
