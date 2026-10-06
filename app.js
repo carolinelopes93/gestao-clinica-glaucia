@@ -282,11 +282,37 @@ function renderDashboard(){
   el('homeReminders').innerHTML=rem.length?rem.map(r=>`<div class="list-item"><div><strong>${escapeHtml(r.title)}</strong><small>${dateBR(r.date)}${r.responsible?' • '+escapeHtml(r.responsible):''}</small></div>${badge(r.priority||'NORMAL')}</div>`).join(''):'<div class="empty">Sem pendências abertas.</div>';
   refreshIcons();
 }
-function renderPatients(){ const q=el('patientSearch').value.toLowerCase(); const rows=state.patients.filter(p=>[p.name,p.phone,p.cpf].join(' ').toLowerCase().includes(q)); el('patientRows').innerHTML=rows.length?rows.map(p=>`<tr><td><strong>${escapeHtml(p.name)}</strong></td><td>${escapeHtml(p.phone||'')}</td><td>${escapeHtml(p.cpf||'')}</td><td>${escapeHtml(p.billing_type||'')}</td><td title="${escapeHtml(p.notes||'')}">${escapeHtml((p.notes||'').slice(0,45))}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('patient','${p.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>'; }
-function renderAgenda(){
-  const month=el('agendaMonth').value||monthISO(), q=el('agendaSearch').value.toLowerCase(), st=el('agendaStatus')?.value||''; const rows=state.agenda.filter(a=>String(a.date||'').startsWith(month)&&(!st||String(a.status||'').toUpperCase()===st)&&[a.patient_name,a.professional,a.type].join(' ').toLowerCase().includes(q)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-  el('agendaRows').innerHTML=rows.length?rows.map(a=>`<tr><td>${dateBR(a.date)}</td><td>${escapeHtml(a.time||'')}</td><td><strong>${escapeHtml(a.patient_name||'')}</strong></td><td>${escapeHtml(a.type||'')}</td><td>${escapeHtml(a.professional||'')}</td><td>${badge(a.status)}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('appointment','${a.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('appointments','${a.id}','agendamento')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum agendamento no período.</td></tr>';
-  renderCalendar(month,rows);
+function normalizeWhatsAppNumber(phone){
+  let digits=String(phone||'').replace(/\D/g,'');
+  if(digits.startsWith('0')) digits=digits.replace(/^0+/,'');
+  if(!digits)return '';
+  if(!digits.startsWith('55') && (digits.length===10 || digits.length===11)) digits='55'+digits;
+  return digits;
+}
+function openPatientWhatsApp(patient){
+  const number=normalizeWhatsAppNumber(patient?.phone);
+  if(!number)return toast('Este paciente não possui telefone/WhatsApp cadastrado.',true);
+  if(number.length<12 || number.length>13)return toast('Confira o número do paciente e inclua o DDD.',true);
+  const firstName=String(patient?.name||'').trim().split(/\s+/)[0]||'';
+  const msg=`Olá${firstName?', '+firstName:''}! Tudo bem? Entramos em contato pela clínica para falar sobre seu agendamento.`;
+  window.open('https://wa.me/'+number+'?text='+encodeURIComponent(msg),'_blank','noopener');
+}
+function renderPatients(){
+  const q=el('patientSearch').value.toLowerCase();
+  const rows=state.patients.filter(p=>[p.name,p.phone,p.cpf].join(' ').toLowerCase().includes(q));
+  el('patientRows').innerHTML=rows.length?rows.map(p=>`<tr>
+    <td><strong>${escapeHtml(p.name)}</strong></td>
+    <td>
+      <div class="patient-phone-cell">
+        <span>${escapeHtml(p.phone||'—')}</span>
+        ${p.phone?`<button class="mini-btn whatsapp-btn" type="button" onclick="window.patientWhatsApp('${p.id}')">WhatsApp</button>`:''}
+      </div>
+    </td>
+    <td>${escapeHtml(p.cpf||'')}</td>
+    <td>${escapeHtml(p.billing_type||'')}</td>
+    <td title="${escapeHtml(p.notes||'')}">${escapeHtml((p.notes||'').slice(0,45))}</td>
+    <td class="row-actions"><button class="mini-btn" onclick="window.appEdit('patient','${p.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button></td>
+  </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>';
 }
 function renderCalendar(month,rows){ const [y,m]=month.split('-').map(Number), first=new Date(y,m-1,1), start=new Date(y,m-1,1-first.getDay()), cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const iso=d.toISOString().slice(0,10);const dayRows=rows.filter(a=>a.date===iso).slice(0,3);cells.push(`<div class="cal-day ${d.getMonth()!==m-1?'other':''} ${iso===todayISO()?'today':''}"><div class="cal-num">${d.getDate()}</div>${dayRows.map(a=>`<span class="cal-chip">${escapeHtml(a.time||'')} ${escapeHtml(a.patient_name||'')}</span>`).join('')}</div>`)} el('agendaCalendar').innerHTML=`<div class="cal-head">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>`<div>${x}</div>`).join('')}</div><div class="cal-grid">${cells.join('')}</div>`; }
 function renderApplications(){ const month=el('appMonth').value||monthISO(),q=el('applicationSearch').value.toLowerCase(); const rows=state.applications.filter(a=>String(a.date||'').startsWith(month)&&[a.patient_name,a.medication].join(' ').toLowerCase().includes(q)); el('applicationRows').innerHTML=rows.length?rows.map(a=>`<tr><td>${dateBR(a.date)}</td><td><strong>${escapeHtml(a.patient_name||'')}</strong></td><td>${escapeHtml(a.medication||'')}</td><td>${escapeHtml(a.dose||'')}</td><td>${money(a.amount)}</td><td>${badge(a.payment_status||'PENDENTE')}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('application','${a.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('applications','${a.id}','aplicação')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhuma aplicação no período.</td></tr>'; }
@@ -739,7 +765,7 @@ function openForm(type,id=null){
 }
 function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
 function formHtml(type,r){
-  if(type==='patient') return field('name','Nome','text',r.name,'span2')+field('phone','Telefone','text',r.phone)+field('birth_date','Data de nascimento','date',r.birth_date)+field('cpf','CPF','text',r.cpf)+field('email','E-mail','email',r.email)+field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)+field('billing_day','Dia de vencimento','number',r.billing_day)+field('notes','Observações','textarea',r.notes,'span2');
+  if(type==='patient') return field('name','Nome','text',r.name,'span2')+field('phone','Telefone / WhatsApp','tel',r.phone)+field('birth_date','Data de nascimento','date',r.birth_date)+field('cpf','CPF','text',r.cpf)+field('email','E-mail','email',r.email)+field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)+field('billing_day','Dia de vencimento','number',r.billing_day)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='appointment') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('type','Tipo de atendimento','select',appointmentTypeOptions(r.type||'Consulta'))+professionalSearchField(r.professional_id,r.professional)+field('status','Status','select',`<option ${r.status==='AGENDADO'?'selected':''}>AGENDADO</option><option ${r.status==='CONFIRMADO'?'selected':''}>CONFIRMADO</option><option ${r.status==='ATENDIDO'?'selected':''}>ATENDIDO</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='application') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+medicationField(r.medication)+field('dose','Dosagem','text',r.dose)+field('dose_unit','Unidade da dosagem','select',dosageUnitOptions(r.dose_unit))+moneyField('amount','Valor',r.amount)+field('billing','Cobrança','select',`<option ${r.billing==='AVULSA'?'selected':''}>AVULSA</option><option ${r.billing==='MENSAL'?'selected':''}>MENSAL</option>`)+field('payment_status','Status do pagamento','select',`<option ${r.payment_status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.payment_status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('due_date','Vencimento','date',r.due_date)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='receivable') return patientSearchField(r.patient_id)+field('description','Descrição','text',r.description,'span2')+field('due_date','Vencimento','date',r.due_date||todayISO())+moneyField('amount','Valor',r.amount)+field('status','Status','select',`<option ${r.status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('notes','Observações','textarea',r.notes,'span2');
@@ -800,6 +826,7 @@ async function saveStockMovement(raw){ const item=state.stock.find(x=>x.id===raw
 async function audit(action,module,record_id,details){ try{await supabase.from('audit_log').insert({user_id:currentUser.id,user_name:currentProfile?.full_name||currentUser.email,action,module,record_id:String(record_id||''),details});}catch(_e){} }
 
 window.appEdit=(type,id)=>openForm(type,id);
+window.patientWhatsApp=id=>{const p=state.patients.find(x=>x.id===id);if(p)openPatientWhatsApp(p);};
 window.stockMove=id=>{const r=state.stock.find(x=>x.id===id);modalContext=null;openForm('stockMove',null);modalContext.record=r; el('modalBody').innerHTML=formHtml('stockMove',r)};
 window.appDelete=async(table,id,label)=>{ if(!confirm(`Excluir ${label}?`))return; const {error}=await supabase.from(table).delete().eq('id',id); if(error)return toast(error.message,true); await audit('DELETE',table,id,{label}); await loadAll(); toast('Registro excluído.'); };
 window.markPaid=async id=>{
