@@ -1039,3 +1039,9 @@ html[data-theme="rose"] .custom-options button:focus{
   background:transparent;color:var(--text);font-size:10px;font-weight:600;cursor:pointer;padding:0 10px;
 }
 .month-step-label:hover{background:var(--surface-2)}
+
+/* Estoque: campo de item simples, sem lista exposta */
+.stock-item-options,
+.stock-item-combobox .custom-combobox-trigger{
+  display:none!important;
+}
