@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#123e43" />
+  <meta name="theme-color" content="#6d5dfc" />
   <title>Gestão Clínica Glaucia</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -55,7 +55,7 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brandmark">G</div>
-        <div><strong id="clinicName">Gestão Clínica</strong><small>Administração</small></div>
+        <div><strong id="clinicName">Gestão Clínica</strong><small>Central de atendimento</small></div>
       </div>
       <nav id="nav" class="nav">
         <button data-view="dashboard" class="active"><span>⌂</span>Painel</button>
@@ -68,6 +68,7 @@
         <button data-view="stock"><span>▦</span>Estoque</button>
         <button data-view="reminders"><span>✓</span>Lembretes</button>
         <button data-view="reports"><span>▤</span>Relatórios</button>
+        <button id="usersNavBtn" data-view="users" class="hidden"><span>U</span>Usuários</button>
       </nav>
       <div class="sidebar-bottom">
         <div class="user-mini"><div id="userAvatar" class="avatar">G</div><div><strong id="userName">Usuário</strong><small id="userRole">Equipe</small></div></div>
@@ -83,7 +84,7 @@
 
       <section id="view-dashboard" class="view active">
         <div class="welcome-card">
-          <div><span class="eyebrow">HOJE</span><h2 id="greeting">Olá!</h2><p id="todayLabel"></p></div>
+          <div><span class="eyebrow">BEM-VINDA</span><h2 id="greeting">Olá!</h2><p>Veja rapidamente como está a clínica hoje.</p><small id="todayLabel" class="welcome-date"></small></div>
           <div class="welcome-actions"><button class="btn light" data-quick="appointment">+ Agendamento</button><button class="btn light" data-quick="patient">+ Paciente</button></div>
         </div>
         <div class="metrics">
@@ -106,6 +107,24 @@
       <section id="view-expenses" class="view"><div class="workspace"><div class="toolbar"><input id="expenseMonth" type="month" /><input id="expenseSearch" class="search" placeholder="Pesquisar categoria ou descrição" /></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Forma</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></div></section>
       <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><input id="stockSearch" class="search" placeholder="Pesquisar medicamento ou material" /><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
       <section id="view-reminders" class="view"><div class="workspace"><div class="toolbar"><select id="reminderStatus"><option value="">Todos</option><option value="ABERTO">Abertos</option><option value="CONCLUÍDO">Concluídos</option></select><input id="reminderSearch" class="search" placeholder="Pesquisar tarefa ou responsável" /></div><div id="reminderCards" class="reminder-grid"></div></div></section>
+      <section id="view-users" class="view">
+        <div class="workspace users-workspace">
+          <div class="users-intro">
+            <div>
+              <span class="eyebrow">ACESSOS</span>
+              <h3>Usuários do sistema</h3>
+              <p>Crie acessos individuais para a equipe e controle quem pode entrar.</p>
+            </div>
+            <button id="newUserBtn" class="btn primary">+ Novo usuário</button>
+          </div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th></th></tr></thead>
+              <tbody id="userRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
       <section id="view-reports" class="view"><div class="workspace report-workspace"><div class="toolbar"><input id="reportMonth" type="month" /><button id="printReportBtn" class="btn primary">Gerar / Imprimir PDF</button></div><div id="reportArea" class="report-area"><div class="report-title"><h2>Fechamento mensal</h2><p id="reportPeriod"></p></div><div class="metrics report-metrics"><article><span>Entradas</span><strong id="rIncome">R$ 0,00</strong></article><article><span>Despesas</span><strong id="rExpenses">R$ 0,00</strong></article><article><span>Saldo</span><strong id="rBalance">R$ 0,00</strong></article><article><span>Pendências</span><strong id="rPending">R$ 0,00</strong></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Resumo de aplicações</h3></div><div id="reportApps" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Resumo financeiro</h3></div><div id="reportFinance" class="list"></div></article></div></div></div></section>
     </main>
   </div>
