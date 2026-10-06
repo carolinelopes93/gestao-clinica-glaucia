@@ -89,6 +89,7 @@ function bindEvents(){
     const b=e.target.closest('[data-view-go]'); if(b) switchView(b.dataset.viewGo);
     const q=e.target.closest('[data-quick]'); if(q) handleAction(q.dataset.quick);
     const pr=e.target.closest('[data-patient-result]'); if(pr) choosePatient(pr.dataset.patientResult,pr.dataset.patientName||'');
+    const prof=e.target.closest('[data-professional-result]'); if(prof) chooseProfessional(prof.dataset.professionalResult,prof.dataset.professionalName||'');
     if(!e.target.closest('.patient-combobox')) qsa('.patient-results').forEach(x=>x.classList.add('hidden'));
     if(!e.target.closest('.notification-wrap')) el('notificationPanel')?.classList.add('hidden');
     if(!e.target.closest('.theme-picker-wrap')) el('themeMenu')?.classList.add('hidden');
@@ -98,6 +99,7 @@ function bindEvents(){
 
   document.addEventListener('input',e=>{
     if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);
+    if(e.target.matches('.professional-search-input')) renderProfessionalResults(e.target);
     if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
   });
 
@@ -348,6 +350,49 @@ window.editUser=id=>openUserForm(id);
 function badge(v){ const t=String(v||'').toUpperCase(); const cls=/PAGO|FINALIZADO|CONCLUÍDO|ATENDIDO|BAIXA/.test(t)?'ok':/CANCELADO|ATRASADO|ALTA/.test(t)?'danger':'warn'; return `<span class="badge ${cls}">${escapeHtml(v||'')}</span>`; }
 function toast(msg,error=false){ const t=el('toast');t.textContent=msg;t.className='toast'+(error?' error':'');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),3200); }
 function patientOptions(selected=''){ return `<option value="">Selecione</option>`+state.patients.filter(p=>p.active!==false).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''}>${escapeHtml(p.name)}</option>`).join(''); }
+function appointmentTypeOptions(selected='Consulta'){
+  const base=['Consulta','Retorno','Avaliação','Procedimento','Aplicação','Exame','Sessão','Outro'];
+  const serviceNames=state.services.filter(x=>x.active!==false).map(x=>String(x.name||'').trim()).filter(Boolean);
+  const values=[...new Set([...base,...serviceNames])];
+  return values.map(v=>`<option value="${escapeHtml(v)}" ${String(v)===String(selected||'Consulta')?'selected':''}>${escapeHtml(v)}</option>`).join('');
+}
+
+function professionalSearchField(selectedId='',selectedName='',opts=''){
+  const p=state.professionals.find(x=>x.id===selectedId) || state.professionals.find(x=>String(x.name||'').toLowerCase()===String(selectedName||'').toLowerCase());
+  return `<div class="field ${opts}"><label>Profissional</label><div class="patient-combobox professional-combobox"><i data-lucide="search"></i><input class="professional-search-input" type="text" autocomplete="off" placeholder="Digite ou escolha um profissional..." value="${escapeHtml(p?.name||selectedName||'')}" /><input class="professional-id-input" type="hidden" name="professional_id" value="${escapeHtml(p?.id||selectedId||'')}" /><input class="professional-name-input" type="hidden" name="professional" value="${escapeHtml(p?.name||selectedName||'')}" /><div class="patient-results professional-results hidden"></div></div><small class="field-help">Profissionais ativos cadastrados no sistema.</small></div>`;
+}
+
+function renderProfessionalResults(input){
+  const wrap=input.closest('.professional-combobox');
+  const results=wrap?.querySelector('.professional-results');
+  const idInput=wrap?.querySelector('.professional-id-input');
+  const nameInput=wrap?.querySelector('.professional-name-input');
+  if(!results||!idInput||!nameInput)return;
+
+  const term=input.value.trim().toLowerCase();
+  if(input.value.trim()!==nameInput.value){idInput.value='';nameInput.value='';}
+
+  const matches=state.professionals
+    .filter(p=>p.active!==false && (!term || [p.name,p.specialty].join(' ').toLowerCase().includes(term)))
+    .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')))
+    .slice(0,15);
+
+  results.innerHTML=matches.length
+    ?matches.map(p=>`<button type="button" data-professional-result="${p.id}" data-professional-name="${escapeHtml(p.name||'')}"><strong>${escapeHtml(p.name||'')}</strong><small>${escapeHtml(p.specialty||'Sem especialidade informada')}</small></button>`).join('')
+    :'<div class="patient-no-result">Nenhum profissional ativo cadastrado.</div>';
+  results.classList.remove('hidden');
+}
+
+function chooseProfessional(id,name){
+  const open=[...document.querySelectorAll('.professional-results:not(.hidden)')].pop();
+  const wrap=open?.closest('.professional-combobox');
+  if(!wrap)return;
+  wrap.querySelector('.professional-id-input').value=id;
+  wrap.querySelector('.professional-name-input').value=name;
+  wrap.querySelector('.professional-search-input').value=name;
+  open.classList.add('hidden');
+}
+
 function patientSearchField(selectedId='',opts='span2'){
   const p=state.patients.find(x=>x.id===selectedId);
   return `<div class="field ${opts}"><label>Paciente</label><div class="patient-combobox"><i data-lucide="search"></i><input class="patient-search-input" type="text" autocomplete="off" placeholder="Digite nome, telefone ou CPF..." value="${escapeHtml(p?.name||'')}" /><input class="patient-id-input" type="hidden" name="patient_id" value="${escapeHtml(selectedId||'')}" /><div class="patient-results hidden"></div></div><small class="field-help">Digite as primeiras letras e escolha o paciente encontrado.</small></div>`;
@@ -397,7 +442,7 @@ function openForm(type,id=null){
 function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
 function formHtml(type,r){
   if(type==='patient') return field('name','Nome','text',r.name,'span2')+field('phone','Telefone','text',r.phone)+field('birth_date','Data de nascimento','date',r.birth_date)+field('cpf','CPF','text',r.cpf)+field('email','E-mail','email',r.email)+field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)+field('billing_day','Dia de vencimento','number',r.billing_day)+field('notes','Observações','textarea',r.notes,'span2');
-  if(type==='appointment') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('type','Tipo','text',r.type||'Consulta')+field('professional','Profissional','text',r.professional)+field('status','Status','select',`<option ${r.status==='AGENDADO'?'selected':''}>AGENDADO</option><option ${r.status==='CONFIRMADO'?'selected':''}>CONFIRMADO</option><option ${r.status==='ATENDIDO'?'selected':''}>ATENDIDO</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)+field('notes','Observações','textarea',r.notes,'span2');
+  if(type==='appointment') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('type','Tipo de atendimento','select',appointmentTypeOptions(r.type||'Consulta'))+professionalSearchField(r.professional_id,r.professional)+field('status','Status','select',`<option ${r.status==='AGENDADO'?'selected':''}>AGENDADO</option><option ${r.status==='CONFIRMADO'?'selected':''}>CONFIRMADO</option><option ${r.status==='ATENDIDO'?'selected':''}>ATENDIDO</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='application') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('medication','Medicação','text',r.medication)+field('dose','Dose','text',r.dose)+moneyField('amount','Valor',r.amount)+field('billing','Cobrança','select',`<option ${r.billing==='AVULSA'?'selected':''}>AVULSA</option><option ${r.billing==='MENSAL'?'selected':''}>MENSAL</option>`)+field('payment_status','Status do pagamento','select',`<option ${r.payment_status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.payment_status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('due_date','Vencimento','date',r.due_date)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='receivable') return patientSearchField(r.patient_id)+field('description','Descrição','text',r.description,'span2')+field('due_date','Vencimento','date',r.due_date||todayISO())+field('amount','Valor','number',r.amount)+field('status','Status','select',`<option ${r.status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','text',r.payment_method)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='expense') return field('date','Data','date',r.date||todayISO())+field('category','Categoria','text',r.category)+field('description','Descrição','text',r.description,'span2')+field('amount','Valor','number',r.amount)+field('payment_method','Forma de pagamento','text',r.payment_method)+field('notes','Observações','textarea',r.notes,'span2');
@@ -420,7 +465,7 @@ async function saveModal(e){
     }
     let table,payload;
     if(type==='patient'){table='patients';payload={name:raw.name,phone:raw.phone,birth_date:raw.birth_date||null,cpf:raw.cpf,email:raw.email,billing_type:raw.billing_type,billing_day:raw.billing_day?Number(raw.billing_day):null,notes:raw.notes,active:true};}
-    if(type==='appointment'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='appointments';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,time:raw.time,type:raw.type,professional:raw.professional,status:raw.status,notes:raw.notes};}
+    if(type==='appointment'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');if(!raw.professional_id) throw new Error('Selecione um profissional cadastrado.');table='appointments';const p=state.patients.find(x=>x.id===raw.patient_id);const prof=state.professionals.find(x=>x.id===raw.professional_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,time:raw.time,type:raw.type,professional_id:raw.professional_id,professional:prof?.name||raw.professional||'',specialty:prof?.specialty||'',status:raw.status,notes:raw.notes};}
     if(type==='application'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='applications';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,medication:raw.medication,dose:raw.dose,amount:parseMoneyInput(raw.amount),billing:raw.billing,payment_status:raw.payment_status,payment_method:raw.payment_method,due_date:raw.due_date||null,notes:raw.notes};}
     if(type==='receivable'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='receivables';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',description:raw.description,due_date:raw.due_date,amount:parseMoneyInput(raw.amount),status:raw.status,payment_method:raw.payment_method,notes:raw.notes,paid_at:raw.status==='PAGO'?(record.paid_at||todayISO()):null};}
     if(type==='expense'){table='expenses';payload={date:raw.date,category:raw.category,description:raw.description,amount:parseMoneyInput(raw.amount),payment_method:raw.payment_method,notes:raw.notes};}
