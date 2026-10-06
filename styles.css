@@ -780,3 +780,14 @@ html[data-theme="rose"] .overview-strip{
 .profile-photo-copy p{margin:6px 0 14px;color:var(--muted);font-size:10px;line-height:1.55}
 .profile-photo-actions{display:flex;gap:8px;flex-wrap:wrap}
 @media(max-width:600px){.profile-photo-body{align-items:flex-start;flex-direction:column}.profile-photo-preview{width:96px;height:96px;min-width:96px}}
+
+
+/* Ajuste final: campos de busca começam mais à esquerda */
+.patient-combobox>svg,
+.professional-combobox>svg{
+  display:none!important;
+}
+.patient-combobox>.patient-search-input,
+.professional-combobox>.professional-search-input{
+  padding-left:12px!important;
+}
