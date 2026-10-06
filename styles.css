@@ -93,3 +93,63 @@ html[data-theme="light"] .nav button:hover{background:#f3f4f6}html[data-theme="l
 .theme-menu button.active{background:var(--primary-soft);color:var(--primary-strong);font-weight:700}
 .theme-dot{width:11px;height:11px;border-radius:50%;border:1px solid rgba(0,0,0,.1)}
 .theme-dot.rose{background:#FF9EA3}.theme-dot.blue{background:#2f62ae}.theme-dot.light{background:#e5e7eb}.theme-dot.dark{background:#0f172a}
+
+/* Ajuste do tema Rosa escolhido pela cliente */
+html[data-theme="rose"]{
+  --bg:#fff8f8;
+  --surface:#ffffff;
+  --surface-2:#fffafa;
+  --surface-3:#ffecef;
+  --text:#3b2b2e;
+  --muted:#7d666b;
+  --line:#ffd8db;
+  --primary:#FF9EA3;
+  --primary-strong:#e87981;
+  --primary-soft:#fff0f1;
+  --sidebar:#FF9EA3;
+  --sidebar-2:#f98f96;
+  --sidebar-text:#5a2b31;
+  --sidebar-muted:#7d444b;
+}
+html[data-theme="rose"] .sidebar{
+  background:linear-gradient(180deg,#FF9EA3 0%,#f98f96 100%);
+  color:var(--sidebar-text);
+}
+html[data-theme="rose"] .brand{
+  border-bottom-color:rgba(90,43,49,.14);
+}
+html[data-theme="rose"] .brandmark{
+  background:rgba(255,255,255,.42);
+  color:#5a2b31;
+}
+html[data-theme="rose"] .brand small,
+html[data-theme="rose"] .nav-label,
+html[data-theme="rose"] .nav button,
+html[data-theme="rose"] .user-mini small,
+html[data-theme="rose"] .logout{
+  color:#6d383f;
+}
+html[data-theme="rose"] .nav button:hover{
+  background:rgba(255,255,255,.24);
+  color:#4f252b;
+}
+html[data-theme="rose"] .nav button.active{
+  background:rgba(255,255,255,.36);
+  color:#4a2127;
+}
+html[data-theme="rose"] .nav button.active:before{
+  background:#c95661;
+}
+html[data-theme="rose"] .sidebar-bottom{
+  border-top-color:rgba(90,43,49,.14);
+}
+
+/* Mantém a rolagem do menu, mas remove a barra cinza visível */
+.nav{
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.nav::-webkit-scrollbar{
+  width:0;
+  height:0;
+}
