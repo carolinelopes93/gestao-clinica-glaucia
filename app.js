@@ -151,7 +151,7 @@ function bindEvents(){
   el('profilePhotoInput')?.addEventListener('change',previewProfilePhoto);
   el('saveProfilePhotoBtn')?.addEventListener('click',saveProfilePhoto);
   el('removeProfilePhotoBtn')?.addEventListener('click',removeProfilePhoto);
-  document.addEventListener('click',e=>{if(e.target.closest('[data-close-profile]')) closeProfilePhotoModal();});
+  document.addEventListener('click',e=>{if(e.target.closest('[data-close-profile]')) closeProfilePhotoModal(); if(e.target.closest('[data-close-chart]')) closePatientChart();});
   el('openCashBtn')?.addEventListener('click',()=>handleCashAction('open'));
   el('printCashBtn')?.addEventListener('click',()=>printCashSummary());
   el('themeButton')?.addEventListener('click',e=>{e.stopPropagation();el('themeMenu')?.classList.toggle('hidden');});
@@ -210,7 +210,7 @@ function bindEvents(){
   document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('globalSearch')?.focus();}
-    if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');closeReportMonthPicker();}
+    if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');closeReportMonthPicker();closePatientChart();}
   });
 
   el('modalForm')?.addEventListener('submit',saveModal);
@@ -435,6 +435,199 @@ function professionalById(id){return state.professionals.find(x=>x.id===id)||nul
 function serviceById(id){return state.services.find(x=>x.id===id)||null;}
 function patientNameFor(row){return patientById(row?.patient_id)?.name||row?.patient_name||'Paciente';}
 function professionalNameFor(row){return professionalById(row?.professional_id)?.name||row?.professional||'';}
+
+
+function patientInitials(name){
+  const parts=String(name||'').trim().split(/\s+/).filter(Boolean);
+  return (parts.slice(0,2).map(x=>x[0]).join('')||'P').toUpperCase();
+}
+
+function patientAppointments(patientId){
+  return state.agenda.filter(a=>a.patient_id===patientId);
+}
+function patientApplications(patientId){
+  return state.applications.filter(a=>a.patient_id===patientId);
+}
+function patientReceivables(patientId){
+  return state.receivables.filter(r=>r.patient_id===patientId);
+}
+function patientTreatmentsFor(patientId){
+  return state.patientTreatments.filter(t=>t.patient_id===patientId);
+}
+function patientEvolutionsFor(patientId){
+  return state.patientEvolutions.filter(e=>e.patient_id===patientId)
+    .sort((a,b)=>String(b.evolution_date||b.created_at||'').localeCompare(String(a.evolution_date||a.created_at||'')));
+}
+
+function openPatientChart(patientId){
+  const p=patientById(patientId);
+  if(!p) return toast('Paciente não encontrado.',true);
+
+  const appts=patientAppointments(patientId);
+  const apps=patientApplications(patientId);
+  const recs=patientReceivables(patientId);
+  const treatments=patientTreatmentsFor(patientId);
+  const evolutions=patientEvolutionsFor(patientId);
+
+  const now=new Date();
+  const today=todayISO();
+  const upcoming=appts
+    .filter(a=>String(a.date||'')>=today && !['CANCELADO','ATENDIDO','FINALIZADO','CONCLUÍDO','FALTOU'].includes(String(a.status||'').toUpperCase()))
+    .sort((a,b)=>(String(a.date||'')+' '+String(a.time||'')).localeCompare(String(b.date||'')+' '+String(b.time||'')))[0];
+
+  const attended=appts.filter(a=>['ATENDIDO','FINALIZADO','CONCLUÍDO'].includes(String(a.status||'').toUpperCase())).length;
+  const missed=appts.filter(a=>String(a.status||'').toUpperCase()==='FALTOU').length;
+  const attendanceBase=attended+missed;
+  const attendancePct=attendanceBase?Math.round((attended/attendanceBase)*100):0;
+
+  const activeTreatments=treatments.filter(t=>String(t.status||'ATIVO').toUpperCase()==='ATIVO');
+  const sessionsTotal=activeTreatments.reduce((sum,t)=>sum+Number(t.sessions_total||0),0);
+  const sessionsUsed=activeTreatments.reduce((sum,t)=>sum+Number(t.sessions_used||0),0);
+  const progress=sessionsTotal?Math.min(100,Math.round((sessionsUsed/sessionsTotal)*100)):0;
+
+  const pending=recs.filter(r=>!['PAGO','CANCELADO','ESTORNADO'].includes(String(r.status||'').toUpperCase()));
+  const pendingTotal=pending.reduce((sum,r)=>sum+Number(r.amount||0),0);
+  const nextDue=pending.filter(r=>r.due_date).sort((a,b)=>String(a.due_date).localeCompare(String(b.due_date)))[0];
+
+  const recentApps=apps.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,8);
+
+  const nextSessionHtml=upcoming
+    ? `<strong>${dateBR(upcoming.date)} às ${escapeHtml(String(upcoming.time||'').slice(0,5))}</strong><span>${escapeHtml(upcoming.type||serviceById(upcoming.service_id)?.name||'Atendimento')}${professionalNameFor(upcoming)?' • '+escapeHtml(professionalNameFor(upcoming)):''}</span>`
+    : '<strong>Nenhuma sessão futura</strong><span>Sem agendamento marcado.</span>';
+
+  const medsHtml=recentApps.length
+    ? recentApps.map(a=>`<div class="chart-list-row"><div><strong>${escapeHtml(a.medication||'Aplicação')}</strong><span>${escapeHtml([a.dose,a.dose_unit].filter(Boolean).join(' ')||'Dosagem não informada')}${a.frequency?' • '+escapeHtml(a.frequency):''}</span></div><small>${dateBR(a.date)}</small></div>`).join('')
+    : '<div class="chart-empty">Nenhuma aplicação ou prescrição registrada.</div>';
+
+  const treatmentHtml=activeTreatments.length
+    ? activeTreatments.map(t=>{
+        const service=serviceById(t.service_id);
+        const prof=professionalById(t.professional_id);
+        const pct=Number(t.sessions_total||0)?Math.min(100,Math.round(Number(t.sessions_used||0)/Number(t.sessions_total||1)*100)):0;
+        return `<div class="chart-treatment-row">
+          <div class="chart-treatment-top"><div><strong>${escapeHtml(service?.name||t.specialty||'Tratamento')}</strong><span>${escapeHtml(prof?.name||'Profissional não informado')}</span></div><b>${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)}</b></div>
+          <div class="chart-progress"><i style="width:${pct}%"></i></div>
+        </div>`;
+      }).join('')
+    : '<div class="chart-empty">Nenhum tratamento ativo cadastrado.</div>';
+
+  const financeHtml=pending.length
+    ? `<div class="chart-finance-alert"><div><span>Em aberto</span><strong>${money(pendingTotal)}</strong></div><small>${nextDue?'Próximo vencimento: '+dateBR(nextDue.due_date):'Sem vencimento informado'}</small></div>`
+    : '<div class="chart-finance-ok"><strong>Sem pendências</strong><span>Nenhum débito em aberto.</span></div>';
+
+  const evolutionHtml=evolutions.length
+    ? evolutions.slice(0,12).map(e=>`<article class="evolution-item"><div><strong>${dateBR(e.evolution_date||String(e.created_at||'').slice(0,10))}</strong><small>${escapeHtml(e.created_by_name||'Equipe clínica')}</small></div><p>${escapeHtml(e.notes||'')}</p></article>`).join('')
+    : '<div class="chart-empty">Ainda não há evoluções registradas.</div>';
+
+  el('patientChartTitle').textContent=p.name;
+  el('patientChartBody').innerHTML=`
+    <div class="patient-chart-layout">
+      <aside class="patient-chart-profile">
+        <div class="chart-avatar">${escapeHtml(patientInitials(p.name))}</div>
+        <h3>${escapeHtml(p.name)}</h3>
+        <span class="chart-status-badge">${escapeHtml(p.billing_type||'PARTICULAR')}</span>
+        <div class="chart-profile-info">
+          <div><small>Telefone / WhatsApp</small><strong>${escapeHtml(p.phone||'Não informado')}</strong></div>
+          <div><small>E-mail</small><strong>${escapeHtml(p.email||'Não informado')}</strong></div>
+          <div><small>CPF</small><strong>${escapeHtml(p.cpf||'Não informado')}</strong></div>
+          <div><small>Cadastrado em</small><strong>${p.created_at?new Date(p.created_at).toLocaleDateString('pt-BR'):'—'}</strong></div>
+        </div>
+        <div class="chart-profile-actions">
+          ${p.phone?'<button type="button" class="btn whatsapp-btn" onclick="window.patientWhatsApp(\''+p.id+'\')">WhatsApp</button>':''}
+          <button type="button" class="btn secondary" onclick="window.appEdit('patient','${p.id}')">Editar cadastro</button>
+        </div>
+      </aside>
+
+      <section class="patient-chart-content">
+        <div class="chart-quick-grid">
+          <article class="chart-kpi"><span>Próxima sessão</span><div>${nextSessionHtml}</div></article>
+          <article class="chart-kpi"><span>Frequência</span><strong>${attended} atendimentos / ${missed} faltas</strong><small>${attendanceBase?attendancePct+'% de assiduidade':'Sem histórico suficiente'}</small></article>
+          <article class="chart-kpi"><span>Progresso de sessões</span><strong>${sessionsUsed} de ${sessionsTotal||0}</strong><div class="chart-progress"><i style="width:${progress}%"></i></div></article>
+          <article class="chart-kpi"><span>Situação financeira</span><strong>${pending.length?money(pendingTotal):'Em dia'}</strong><small>${nextDue?'Vence em '+dateBR(nextDue.due_date):'Sem pendências'}</small></article>
+        </div>
+
+        <div class="chart-two-col">
+          <article class="chart-card">
+            <div class="chart-card-head"><div><span class="eyebrow">TRATAMENTO</span><h3>Tratamento atual</h3></div></div>
+            ${treatmentHtml}
+          </article>
+          <article class="chart-card">
+            <div class="chart-card-head"><div><span class="eyebrow">PRESCRIÇÕES</span><h3>Aplicações e medicamentos</h3></div></div>
+            <div class="chart-list">${medsHtml}</div>
+          </article>
+        </div>
+
+        <article class="chart-card">
+          <div class="chart-card-head">
+            <div><span class="eyebrow">FINANCEIRO</span><h3>Situação do paciente</h3></div>
+            <button type="button" class="btn secondary small" onclick="window.patientRegisterPayment('${p.id}')">Registrar pagamento</button>
+          </div>
+          ${financeHtml}
+          <div class="chart-plan-line"><span>Plano / cobrança</span><strong>${escapeHtml(p.billing_type||'Não informado')}</strong></div>
+        </article>
+
+        <article class="chart-card">
+          <div class="chart-card-head"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Histórico e notas clínicas</h3></div></div>
+          <div class="evolution-form">
+            <textarea id="patientEvolutionText" placeholder="Registrar evolução médica/terapêutica desta sessão..."></textarea>
+            <button type="button" class="btn primary" onclick="window.savePatientEvolution('${p.id}')">Salvar evolução</button>
+          </div>
+          <div class="evolution-list">${evolutionHtml}</div>
+        </article>
+      </section>
+    </div>
+  `;
+
+  el('patientChartDrawer').classList.remove('hidden');
+  el('patientChartDrawer').setAttribute('aria-hidden','false');
+  document.body.classList.add('drawer-open');
+  refreshIcons();
+}
+
+function closePatientChart(){
+  el('patientChartDrawer')?.classList.add('hidden');
+  el('patientChartDrawer')?.setAttribute('aria-hidden','true');
+  if(el('patientChartBody')) el('patientChartBody').innerHTML='';
+  document.body.classList.remove('drawer-open');
+}
+
+async function savePatientEvolution(patientId){
+  const text=el('patientEvolutionText')?.value.trim();
+  if(!text) return toast('Digite a evolução antes de salvar.',true);
+  const {error}=await supabase.from('patient_evolutions').insert({
+    patient_id:patientId,
+    evolution_date:todayISO(),
+    notes:text,
+    created_by:currentUser?.id||null,
+    created_by_name:currentProfile?.full_name||currentUser?.email||'Equipe clínica'
+  });
+  if(error) return toast(error.message,true);
+  await audit('INSERT','patient_evolutions',patientId,{patient_id:patientId});
+  const {data,error:loadError}=await supabase.from('patient_evolutions').select('*').order('created_at',{ascending:false});
+  if(!loadError) state.patientEvolutions=data||[];
+  toast('Evolução registrada.');
+  openPatientChart(patientId);
+}
+
+function openReceivableForPatient(patientId){
+  const p=patientById(patientId);
+  if(!p) return toast('Paciente não encontrado.',true);
+  const pending=patientReceivables(patientId).find(r=>!['PAGO','CANCELADO','ESTORNADO'].includes(String(r.status||'').toUpperCase()));
+  if(pending) return openForm('receivable',pending.id);
+
+  const record={patient_id:patientId,due_date:todayISO(),status:'PENDENTE'};
+  modalContext={type:'receivable',id:null,record};
+  el('modalEyebrow').textContent='FINANCEIRO';
+  el('modalTitle').textContent='Novo valor a receber';
+  el('modalBody').innerHTML=formHtml('receivable',record);
+  el('modal').classList.remove('hidden');
+  el('modal').setAttribute('aria-hidden','false');
+  refreshIcons();
+}
+
+window.openPatientChart=openPatientChart;
+window.savePatientEvolution=savePatientEvolution;
+window.patientRegisterPayment=openReceivableForPatient;
 
 function normalizeWhatsAppNumber(phone){
   let digits=String(phone||'').replace(/\D/g,'');
