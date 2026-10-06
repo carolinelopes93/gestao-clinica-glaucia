@@ -1,11 +1,21 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="rose">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#6d5dfc" />
+  <meta name="theme-color" content="#9f5667" />
   <title>Gestão Clínica Glaucia</title>
+  <script>
+    (() => {
+      const saved = localStorage.getItem('clinicTheme') || 'rose';
+      document.documentElement.dataset.theme = saved;
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
 </head>
 <body>
   <div id="toast" class="toast hidden"></div>
@@ -15,9 +25,7 @@
       <div class="logo">G</div>
       <h1>Gestão Clínica</h1>
       <p>O sistema foi criado. Falta somente conectar ao projeto gratuito do Supabase.</p>
-      <div class="setup-note">
-        Preencha <strong>SUPABASE_URL</strong> e <strong>SUPABASE_ANON_KEY</strong> no arquivo <code>config.js</code>.
-      </div>
+      <div class="setup-note">Preencha <strong>SUPABASE_URL</strong> e <strong>SUPABASE_ANON_KEY</strong> no arquivo <code>config.js</code>.</div>
       <button class="btn primary" onclick="location.reload()">Tentar novamente</button>
     </div>
   </section>
@@ -27,8 +35,8 @@
       <div class="brand-orb">G</div>
       <div>
         <span class="eyebrow light">GESTÃO CLÍNICA</span>
-        <h1>Rotina da clínica em um só lugar.</h1>
-        <p>Agenda, pacientes, aplicações, financeiro, estoque, relatórios e lembretes.</p>
+        <h1>Gestão organizada, atendimento mais leve.</h1>
+        <p>Agenda, pacientes, aplicações, financeiro, estoque, relatórios e equipe em um único sistema.</p>
       </div>
       <div class="login-points">
         <div><span>✓</span> Acesso individual por profissional</div>
@@ -55,81 +63,201 @@
     <aside class="sidebar">
       <div class="brand">
         <div class="brandmark">G</div>
-        <div><strong id="clinicName">Gestão Clínica</strong><small>Central de atendimento</small></div>
+        <div>
+          <strong id="clinicName">Gestão Clínica</strong>
+          <small>Gestão & atendimento</small>
+        </div>
       </div>
+
       <nav id="nav" class="nav">
-        <button data-view="dashboard" class="active"><span>⌂</span>Painel</button>
-        <button data-view="agenda"><span>◷</span>Agenda</button>
-        <button data-view="patients"><span>P</span>Pacientes</button>
-        <button data-view="applications"><span>＋</span>Aplicações</button>
-        <button data-view="finance"><span>R$</span>Financeiro</button>
-        <button data-view="receivables"><span>↙</span>A Receber</button>
-        <button data-view="expenses"><span>−</span>Despesas</button>
-        <button data-view="stock"><span>▦</span>Estoque</button>
-        <button data-view="reminders"><span>✓</span>Lembretes</button>
-        <button data-view="reports"><span>▤</span>Relatórios</button>
-        <button id="usersNavBtn" data-view="users" class="hidden"><span>U</span>Usuários</button>
+        <div class="nav-group">
+          <span class="nav-label">Visão geral</span>
+          <button data-view="dashboard" class="active"><i data-lucide="layout-dashboard"></i><span class="nav-text">Painel</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-label">Atendimentos</span>
+          <button data-view="agenda"><i data-lucide="calendar-days"></i><span class="nav-text">Agenda</span></button>
+          <button data-view="patients"><i data-lucide="users"></i><span class="nav-text">Pacientes</span></button>
+          <button data-view="applications"><i data-lucide="syringe"></i><span class="nav-text">Aplicações</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-label">Financeiro</span>
+          <button data-view="finance"><i data-lucide="chart-no-axes-combined"></i><span class="nav-text">Visão financeira</span></button>
+          <button data-view="receivables"><i data-lucide="wallet-cards"></i><span class="nav-text">A receber</span></button>
+          <button data-view="expenses"><i data-lucide="receipt-text"></i><span class="nav-text">Despesas</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-label">Cadastros & gestão</span>
+          <button data-view="stock"><i data-lucide="boxes"></i><span class="nav-text">Estoque</span></button>
+          <button data-view="reminders"><i data-lucide="list-checks"></i><span class="nav-text">Lembretes</span></button>
+          <button id="usersNavBtn" data-view="users" class="hidden"><i data-lucide="user-cog"></i><span class="nav-text">Usuários</span></button>
+        </div>
+        <div class="nav-group">
+          <span class="nav-label">Relatórios</span>
+          <button data-view="reports"><i data-lucide="file-chart-column"></i><span class="nav-text">Relatórios</span></button>
+        </div>
       </nav>
+
       <div class="sidebar-bottom">
-        <div class="user-mini"><div id="userAvatar" class="avatar">G</div><div><strong id="userName">Usuário</strong><small id="userRole">Equipe</small></div></div>
-        <button id="logoutBtn" class="logout">Sair</button>
+        <div class="user-mini">
+          <div id="userAvatar" class="avatar">G</div>
+          <div class="user-mini-copy"><strong id="userName">Usuário</strong><small id="userRole">Equipe</small></div>
+        </div>
+        <button id="logoutBtn" class="logout"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <div><span id="pageEyebrow" class="eyebrow">VISÃO GERAL</span><h1 id="pageTitle">Painel</h1><p id="pageSubtitle">Acompanhe os atendimentos e pendências de hoje.</p></div>
-        <div class="top-actions"><button id="refreshBtn" class="btn ghost">Atualizar</button><button id="topAction" class="btn primary">+ Novo paciente</button></div>
+        <div class="topbar-title">
+          <span id="pageEyebrow" class="eyebrow">VISÃO GERAL</span>
+          <h1 id="pageTitle">Painel</h1>
+        </div>
+
+        <div class="global-search" id="globalSearchWrap">
+          <i data-lucide="search"></i>
+          <input id="globalSearch" type="search" autocomplete="off" placeholder="Buscar paciente, agendamento, aplicação..." />
+          <kbd>Ctrl K</kbd>
+          <div id="globalSearchResults" class="search-results hidden"></div>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="quickAppointmentBtn" class="btn primary compact"><i data-lucide="calendar-plus"></i><span>Novo agendamento</span></button>
+          <button id="refreshBtn" class="icon-btn" title="Atualizar"><i data-lucide="refresh-cw"></i></button>
+
+          <div class="notification-wrap">
+            <button id="notificationBtn" class="icon-btn" title="Notificações">
+              <i data-lucide="bell"></i>
+              <span id="notificationCount" class="notification-count hidden">0</span>
+            </button>
+            <div id="notificationPanel" class="notification-panel hidden">
+              <div class="notification-head">
+                <div><strong>Notificações</strong><small>Pendências da equipe</small></div>
+                <button class="link" data-view-go="reminders">Ver todas</button>
+              </div>
+              <div id="notificationItems" class="notification-items"></div>
+            </div>
+          </div>
+
+          <label class="theme-picker" title="Tema visual">
+            <i data-lucide="palette"></i>
+            <select id="themeSelect" aria-label="Selecionar tema">
+              <option value="rose">Rosa</option>
+              <option value="blue">Azul</option>
+              <option value="light">Claro</option>
+              <option value="dark">Noturno</option>
+            </select>
+          </label>
+
+          <div class="profile-chip">
+            <div id="topUserAvatar" class="avatar small">G</div>
+            <div><strong id="topUserName">Usuário</strong><small id="topUserRole">Equipe</small></div>
+          </div>
+        </div>
       </header>
 
+      <div class="page-context">
+        <p id="pageSubtitle">Acompanhe os atendimentos e pendências de hoje.</p>
+        <button id="topAction" class="btn secondary">+ Novo paciente</button>
+      </div>
+
       <section id="view-dashboard" class="view active">
-        <div class="welcome-card">
-          <div><span class="eyebrow">BEM-VINDA</span><h2 id="greeting">Olá!</h2><p>Veja rapidamente como está a clínica hoje.</p><small id="todayLabel" class="welcome-date"></small></div>
-          <div class="welcome-actions"><button class="btn light" data-quick="appointment">+ Agendamento</button><button class="btn light" data-quick="patient">+ Paciente</button></div>
+        <div class="overview-strip">
+          <div>
+            <span class="eyebrow">HOJE</span>
+            <h2 id="greeting">Olá!</h2>
+            <p>Resumo operacional da clínica para você começar o dia.</p>
+          </div>
+          <div class="overview-date">
+            <i data-lucide="calendar-clock"></i>
+            <div><small>Data</small><strong id="todayLabel"></strong></div>
+          </div>
         </div>
+
         <div class="metrics">
-          <article><span>Pacientes ativos</span><strong id="mPatients">0</strong><small>cadastrados</small></article>
-          <article><span>Agenda de hoje</span><strong id="mToday">0</strong><small>compromissos</small></article>
-          <article><span>A receber</span><strong id="mPending">R$ 0,00</strong><small>pendente</small></article>
-          <article><span>Saldo do mês</span><strong id="mBalance">R$ 0,00</strong><small>entradas − despesas</small></article>
+          <article class="metric-card"><div class="metric-icon"><i data-lucide="users-round"></i></div><div><span>Pacientes ativos</span><strong id="mPatients">0</strong><small>cadastros ativos</small></div></article>
+          <article class="metric-card"><div class="metric-icon"><i data-lucide="calendar-check-2"></i></div><div><span>Agenda de hoje</span><strong id="mToday">0</strong><small>compromissos</small></div></article>
+          <article class="metric-card"><div class="metric-icon"><i data-lucide="circle-dollar-sign"></i></div><div><span>A receber</span><strong id="mPending">R$ 0,00</strong><small>valores pendentes</small></div></article>
+          <article class="metric-card"><div class="metric-icon"><i data-lucide="trending-up"></i></div><div><span>Saldo do mês</span><strong id="mBalance">R$ 0,00</strong><small>entradas − despesas</small></div></article>
         </div>
+
         <div class="dashboard-grid">
-          <article class="panel"><div class="panel-head"><div><span class="eyebrow">AGENDA</span><h3>Atendimentos de hoje</h3></div><button class="link" data-view-go="agenda">Ver agenda</button></div><div id="todayAppointments" class="list"></div></article>
-          <article class="panel"><div class="panel-head"><div><span class="eyebrow">PENDÊNCIAS</span><h3>Lembretes da equipe</h3></div><button class="link" data-view-go="reminders">Ver todos</button></div><div id="homeReminders" class="list"></div></article>
+          <article class="panel schedule-panel">
+            <div class="panel-head">
+              <div><span class="eyebrow">AGENDA</span><h3>Atendimentos de hoje</h3></div>
+              <button class="link" data-view-go="agenda">Abrir agenda <i data-lucide="arrow-right"></i></button>
+            </div>
+            <div class="quick-tabs" id="dashboardStatusTabs">
+              <button class="active" data-dashboard-filter="ALL">Todos <span id="tabAllCount">0</span></button>
+              <button data-dashboard-filter="AGENDADO">Aguardando <span id="tabWaitingCount">0</span></button>
+              <button data-dashboard-filter="CONFIRMADO">Confirmados <span id="tabConfirmedCount">0</span></button>
+              <button data-dashboard-filter="ATENDIDO">Concluídos <span id="tabDoneCount">0</span></button>
+            </div>
+            <div class="tablewrap dashboard-tablewrap">
+              <table class="data-table compact-table">
+                <thead><tr><th>Horário</th><th>Paciente</th><th>Procedimento</th><th>Status</th><th class="align-right">Ações</th></tr></thead>
+                <tbody id="todayAppointmentRows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div><span class="eyebrow">PENDÊNCIAS</span><h3>Lembretes da equipe</h3></div>
+              <button class="link" data-view-go="reminders">Ver todos</button>
+            </div>
+            <div id="homeReminders" class="list"></div>
+          </article>
         </div>
       </section>
 
-      <section id="view-agenda" class="view"><div class="workspace"><div class="toolbar"><input id="agendaMonth" type="month" /><input id="agendaSearch" class="search" placeholder="Pesquisar paciente ou profissional" /></div><div id="agendaCalendar" class="calendar"></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Profissional</th><th>Status</th><th></th></tr></thead><tbody id="agendaRows"></tbody></table></div></div></section>
-      <section id="view-patients" class="view"><div class="workspace"><div class="toolbar"><input id="patientSearch" class="search" placeholder="Pesquisar por nome, telefone ou CPF" /></div><div class="tablewrap"><table><thead><tr><th>Paciente</th><th>Telefone</th><th>CPF</th><th>Cobrança</th><th>Observações</th><th></th></tr></thead><tbody id="patientRows"></tbody></table></div></div></section>
-      <section id="view-applications" class="view"><div class="workspace"><div class="toolbar"><input id="appMonth" type="month" /><input id="applicationSearch" class="search" placeholder="Pesquisar paciente ou medicação" /></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Paciente</th><th>Medicação</th><th>Dose</th><th>Valor</th><th>Pagamento</th><th></th></tr></thead><tbody id="applicationRows"></tbody></table></div></div></section>
-      <section id="view-finance" class="view"><div class="metrics finance-metrics"><article><span>Entradas do mês</span><strong id="fIncome">R$ 0,00</strong></article><article><span>Despesas do mês</span><strong id="fExpenses">R$ 0,00</strong></article><article><span>Saldo do mês</span><strong id="fBalance">R$ 0,00</strong></article><article><span>A receber</span><strong id="fPending">R$ 0,00</strong></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Últimos recebimentos</h3></div><div id="financeIncomeList" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Últimas despesas</h3></div><div id="financeExpenseList" class="list"></div></article></div></section>
-      <section id="view-receivables" class="view"><div class="workspace"><div class="toolbar"><select id="receivableStatus"><option value="">Todos</option><option>PENDENTE</option><option>PAGO</option></select><input id="receivableSearch" class="search" placeholder="Pesquisar paciente ou descrição" /></div><div class="tablewrap"><table><thead><tr><th>Vencimento</th><th>Paciente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Forma</th><th></th></tr></thead><tbody id="receivableRows"></tbody></table></div></div></section>
-      <section id="view-expenses" class="view"><div class="workspace"><div class="toolbar"><input id="expenseMonth" type="month" /><input id="expenseSearch" class="search" placeholder="Pesquisar categoria ou descrição" /></div><div class="tablewrap"><table><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Forma</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></div></section>
-      <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><input id="stockSearch" class="search" placeholder="Pesquisar medicamento ou material" /><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
-      <section id="view-reminders" class="view"><div class="workspace"><div class="toolbar"><select id="reminderStatus"><option value="">Todos</option><option value="ABERTO">Abertos</option><option value="CONCLUÍDO">Concluídos</option></select><input id="reminderSearch" class="search" placeholder="Pesquisar tarefa ou responsável" /></div><div id="reminderCards" class="reminder-grid"></div></div></section>
+      <section id="view-agenda" class="view">
+        <div class="workspace">
+          <div class="toolbar">
+            <input id="agendaMonth" type="month" />
+            <select id="agendaStatus">
+              <option value="">Todos os status</option>
+              <option value="AGENDADO">Aguardando</option>
+              <option value="CONFIRMADO">Confirmados</option>
+              <option value="ATENDIDO">Concluídos</option>
+              <option value="CANCELADO">Cancelados</option>
+            </select>
+            <div class="toolbar-search wide"><i data-lucide="search"></i><input id="agendaSearch" class="search" placeholder="Pesquisar paciente, procedimento ou profissional" /></div>
+          </div>
+          <div id="agendaCalendar" class="calendar"></div>
+          <div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Profissional</th><th>Status</th><th></th></tr></thead><tbody id="agendaRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="view-patients" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="patientSearch" class="search" placeholder="Pesquisar por nome, telefone ou CPF" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Paciente</th><th>Telefone</th><th>CPF</th><th>Cobrança</th><th>Observações</th><th></th></tr></thead><tbody id="patientRows"></tbody></table></div></div></section>
+      <section id="view-applications" class="view"><div class="workspace"><div class="toolbar"><input id="appMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="applicationSearch" class="search" placeholder="Pesquisar paciente ou medicação" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Paciente</th><th>Medicação</th><th>Dose</th><th>Valor</th><th>Pagamento</th><th></th></tr></thead><tbody id="applicationRows"></tbody></table></div></div></section>
+      <section id="view-finance" class="view"><div class="metrics finance-metrics"><article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-down-left"></i></div><div><span>Entradas do mês</span><strong id="fIncome">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-up-right"></i></div><div><span>Despesas do mês</span><strong id="fExpenses">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="landmark"></i></div><div><span>Saldo do mês</span><strong id="fBalance">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="clock-3"></i></div><div><span>A receber</span><strong id="fPending">R$ 0,00</strong></div></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Últimos recebimentos</h3></div><div id="financeIncomeList" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Últimas despesas</h3></div><div id="financeExpenseList" class="list"></div></article></div></section>
+      <section id="view-receivables" class="view"><div class="workspace"><div class="toolbar"><select id="receivableStatus"><option value="">Todos</option><option>PENDENTE</option><option>PAGO</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="receivableSearch" class="search" placeholder="Pesquisar paciente ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Vencimento</th><th>Paciente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Forma</th><th></th></tr></thead><tbody id="receivableRows"></tbody></table></div></div></section>
+      <section id="view-expenses" class="view"><div class="workspace"><div class="toolbar"><input id="expenseMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="expenseSearch" class="search" placeholder="Pesquisar categoria ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Forma</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></div></section>
+      <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="stockSearch" class="search" placeholder="Pesquisar medicamento, material ou lote" /></div><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
+      <section id="view-reminders" class="view"><div class="workspace"><div class="toolbar"><select id="reminderStatus"><option value="">Todos</option><option value="ABERTO">Abertos</option><option value="CONCLUÍDO">Concluídos</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="reminderSearch" class="search" placeholder="Pesquisar tarefa ou responsável" /></div></div><div id="reminderCards" class="reminder-grid"></div></div></section>
+
       <section id="view-users" class="view">
         <div class="workspace users-workspace">
           <div class="users-intro">
-            <div>
-              <span class="eyebrow">ACESSOS</span>
-              <h3>Usuários do sistema</h3>
-              <p>Crie acessos individuais para a equipe e controle quem pode entrar.</p>
-            </div>
+            <div><span class="eyebrow">ACESSOS</span><h3>Usuários do sistema</h3><p>Crie acessos individuais para a equipe e controle quem pode entrar.</p></div>
             <button id="newUserBtn" class="btn primary">+ Novo usuário</button>
           </div>
-          <div class="tablewrap">
-            <table>
-              <thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th></th></tr></thead>
-              <tbody id="userRows"></tbody>
-            </table>
-          </div>
+          <div class="tablewrap"><table class="data-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div>
         </div>
       </section>
-      <section id="view-reports" class="view"><div class="workspace report-workspace"><div class="toolbar"><input id="reportMonth" type="month" /><button id="printReportBtn" class="btn primary">Gerar / Imprimir PDF</button></div><div id="reportArea" class="report-area"><div class="report-title"><h2>Fechamento mensal</h2><p id="reportPeriod"></p></div><div class="metrics report-metrics"><article><span>Entradas</span><strong id="rIncome">R$ 0,00</strong></article><article><span>Despesas</span><strong id="rExpenses">R$ 0,00</strong></article><article><span>Saldo</span><strong id="rBalance">R$ 0,00</strong></article><article><span>Pendências</span><strong id="rPending">R$ 0,00</strong></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Resumo de aplicações</h3></div><div id="reportApps" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Resumo financeiro</h3></div><div id="reportFinance" class="list"></div></article></div></div></div></section>
+
+      <section id="view-reports" class="view"><div class="workspace report-workspace"><div class="toolbar"><input id="reportMonth" type="month" /><button id="printReportBtn" class="btn primary">Gerar / Imprimir PDF</button></div><div id="reportArea" class="report-area"><div class="report-title"><h2>Fechamento mensal</h2><p id="reportPeriod"></p></div><div class="metrics report-metrics"><article class="metric-card"><div class="metric-icon"><i data-lucide="circle-dollar-sign"></i></div><div><span>Entradas</span><strong id="rIncome">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="receipt"></i></div><div><span>Despesas</span><strong id="rExpenses">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="landmark"></i></div><div><span>Saldo</span><strong id="rBalance">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="clock"></i></div><div><span>Pendências</span><strong id="rPending">R$ 0,00</strong></div></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Resumo de aplicações</h3></div><div id="reportApps" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Resumo financeiro</h3></div><div id="reportFinance" class="list"></div></article></div></div></div></section>
     </main>
   </div>
 
-  <div id="modal" class="modal hidden" aria-hidden="true"><div class="backdrop" data-close="modal"></div><div class="modal-card"><div class="modal-head"><div><span id="modalEyebrow" class="eyebrow">CADASTRO</span><h2 id="modalTitle">Novo registro</h2></div><button class="x" data-close="modal">×</button></div><form id="modalForm"><div id="modalBody" class="formgrid"></div><div class="modal-actions"><button type="button" class="btn ghost" data-close="modal">Cancelar</button><button id="modalSave" class="btn primary">Salvar</button></div></form></div></div>
+  <div id="modal" class="modal hidden" aria-hidden="true">
+    <div class="backdrop" data-close="modal"></div>
+    <div class="modal-card">
+      <div class="modal-head"><div><span id="modalEyebrow" class="eyebrow">CADASTRO</span><h2 id="modalTitle">Novo registro</h2></div><button class="x" data-close="modal">×</button></div>
+      <form id="modalForm"><div id="modalBody" class="formgrid"></div><div class="modal-actions"><button type="button" class="btn ghost" data-close="modal">Cancelar</button><button id="modalSave" class="btn primary">Salvar</button></div></form>
+    </div>
+  </div>
 
   <script src="config.js"></script>
   <script type="module" src="app.js"></script>
