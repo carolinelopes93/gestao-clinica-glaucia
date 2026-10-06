@@ -84,7 +84,7 @@ async function bootstrapFirstUser(){
     const {data:available,error:checkError}=await supabase.rpc('bootstrap_available');
     if(checkError) throw checkError;
     if(!available) throw new Error('O primeiro acesso já foi criado.');
-    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:'Glaucia'}}});
+    const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:'Glaucia'},emailRedirectTo:window.location.origin+'/'}});
     if(error) throw error;
     if(data.session && data.user){
       await enterApp(data.user);
