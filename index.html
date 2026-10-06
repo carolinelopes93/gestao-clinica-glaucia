@@ -51,7 +51,7 @@
         <p>Use o e-mail e a senha cadastrados para a equipe.</p>
         <label>E-mail<input id="loginEmail" type="email" autocomplete="username" required placeholder="seuemail@exemplo.com" /></label>
         <label>Senha<input id="loginPassword" type="password" autocomplete="current-password" required placeholder="Sua senha" /></label>
-        <button id="loginBtn" type="submit" class="btn primary full">Entrar no sistema</button>
+        <button id="loginBtn" type="submit" class="btn primary full" disabled>Carregando sistema...</button>
         <button id="bootstrapBtn" type="button" class="btn ghost full hidden">Criar primeiro acesso</button>
         <div id="loginError" class="form-error hidden"></div>
         <small id="loginHint">Acesso restrito à equipe da clínica.</small>
@@ -491,6 +491,7 @@
   </div>
 
   <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
