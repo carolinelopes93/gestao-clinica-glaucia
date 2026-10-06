@@ -269,44 +269,62 @@ async function login(e){
     return;
   }
 
-  if(!supabase){
-    errorBox.textContent='O sistema ainda está carregando. Aguarde alguns segundos e tente novamente.';
-    errorBox.classList.remove('hidden');
-    return;
-  }
-
   const originalText=btn.textContent;
   btn.disabled=true;
   btn.textContent='Entrando...';
 
-  let timer;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),15000);
+
   try{
-    const loginPromise=supabase.auth.signInWithPassword({email,password});
-    const timeoutPromise=new Promise((_,reject)=>{
-      timer=setTimeout(()=>reject(new Error('TIMEOUT_LOGIN')),12000);
+    const response=await fetch(cfg.SUPABASE_URL+'/auth/v1/token?grant_type=password',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':cfg.SUPABASE_ANON_KEY,
+        'Authorization':'Bearer '+cfg.SUPABASE_ANON_KEY
+      },
+      body:JSON.stringify({email,password}),
+      signal:controller.signal
     });
 
-    const {data,error}=await Promise.race([loginPromise,timeoutPromise]);
+    const payload=await response.json().catch(()=>({}));
 
-    if(error){
-      const msg=String(error.message||'').toLowerCase();
-      if(msg.includes('invalid login')||msg.includes('invalid credentials')){
+    if(!response.ok){
+      const raw=String(payload?.msg||payload?.message||payload?.error_description||payload?.error||'').toLowerCase();
+      if(raw.includes('invalid login')||raw.includes('invalid credentials')){
         throw new Error('E-mail ou senha incorretos.');
       }
-      if(msg.includes('email not confirmed')){
+      if(raw.includes('email not confirmed')){
         throw new Error('Este e-mail ainda precisa ser confirmado.');
       }
-      throw error;
+      throw new Error(payload?.msg||payload?.message||'Não foi possível entrar. Tente novamente.');
     }
 
-    if(!data?.user){
-      throw new Error('Não foi possível carregar o usuário.');
+    if(!payload.access_token || !payload.refresh_token){
+      throw new Error('Não foi possível criar a sessão do usuário.');
     }
+
+    if(!supabase || !supabase.auth){
+      const createClient=window.supabase?.createClient;
+      if(!createClient) throw new Error('A conexão do sistema não foi carregada. Atualize a página.');
+      supabase=createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{
+        auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
+      });
+    }
+
+    const {data,error}=await supabase.auth.setSession({
+      access_token:payload.access_token,
+      refresh_token:payload.refresh_token
+    });
+    if(error) throw error;
+    if(!data?.user) throw new Error('Não foi possível carregar o usuário.');
 
     await enterApp(data.user);
   }catch(err){
     let message=err?.message||'Não foi possível entrar.';
-    if(message==='TIMEOUT_LOGIN') message='A conexão demorou demais. Tente novamente.';
+    if(err?.name==='AbortError') message='A conexão demorou demais. Tente novamente.';
+    if(message.includes("Cannot read properties")) message='Não foi possível conectar ao sistema. Atualize a página e tente novamente.';
     errorBox.textContent=message;
     errorBox.classList.remove('hidden');
   }finally{
