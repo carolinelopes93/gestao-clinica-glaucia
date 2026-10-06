@@ -119,20 +119,7 @@ function bindEvents(){
     const q=e.target.closest('[data-quick]'); if(q) handleAction(q.dataset.quick);
     const pr=e.target.closest('[data-patient-result]'); if(pr) choosePatient(pr.dataset.patientResult,pr.dataset.patientName||'');
     const prof=e.target.closest('[data-professional-result]'); if(prof) chooseProfessional(prof.dataset.professionalResult,prof.dataset.professionalName||'');
-    const stockChoice=e.target.closest('[data-stock-item]');
-    if(stockChoice){
-      const wrap=stockChoice.closest('.stock-item-combobox');
-      const input=wrap?.querySelector('.stock-item-input');
-      if(input) input.value=stockChoice.dataset.stockItem||'';
-      wrap?.querySelector('.stock-item-options')?.classList.add('hidden');
-    }
-    const stockTrigger=e.target.closest('.custom-combobox-trigger');
-    if(stockTrigger){
-      const wrap=stockTrigger.closest('.stock-item-combobox'), input=wrap?.querySelector('.stock-item-input');
-      if(input) renderStockItemOptions(input);
-    }
     if(!e.target.closest('.patient-combobox')) qsa('.patient-results').forEach(x=>x.classList.add('hidden'));
-    if(!e.target.closest('.stock-item-combobox')) qsa('.stock-item-options').forEach(x=>x.classList.add('hidden'));
     if(!e.target.closest('.notification-wrap')) el('notificationPanel')?.classList.add('hidden');
     if(!e.target.closest('.theme-picker-wrap')) el('themeMenu')?.classList.add('hidden');
     if(!e.target.closest('#globalSearchWrap')) el('globalSearchResults')?.classList.add('hidden');
@@ -143,7 +130,6 @@ function bindEvents(){
     if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);
     if(e.target.matches('.professional-search-input')) renderProfessionalResults(e.target);
     if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
-    if(e.target.matches('.stock-item-input')) renderStockItemOptions(e.target);
   });
 
   document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
@@ -625,7 +611,7 @@ function medicationField(value=''){
   return `<div class="field"><label>Medicação</label><input name="medication" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite a medicação..." /></div>`;
 }
 function stockItemField(value=''){
-  return `<div class="field span2"><label>Item</label><div class="custom-combobox stock-item-combobox"><input class="custom-combobox-input stock-item-input" name="name" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha um item..." /><button class="custom-combobox-trigger" type="button" tabindex="-1"><i data-lucide="chevron-down"></i></button><div class="custom-options stock-item-options hidden"></div></div><small class="field-help">Digite para pesquisar ou escolha uma opção.</small></div>`;
+  return `<div class="field span2"><label>Item</label><input name="name" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite o nome do item..." /><small class="field-help">Ex.: gaze, luva de procedimento, seringa, álcool 70%.</small></div>`;
 }
 function stockItemChoices(term=''){
   const base=['Álcool 70%','Algodão','Gaze','Luva de procedimento','Máscara descartável','Seringa 1 mL','Seringa 3 mL','Seringa 5 mL','Agulha','Curativo','Papel toalha','Soro fisiológico'];
