@@ -971,3 +971,71 @@ body{
   font-size:11px!important;
   font-weight:600!important;
 }
+
+
+/* ===== Dropdowns próprios e calendário de relatório refinado ===== */
+.custom-combobox{position:relative}
+.custom-combobox-input{padding-right:38px!important}
+.custom-combobox-trigger{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  width:28px;height:28px;border:0;background:transparent;color:var(--muted);
+  display:grid;place-items:center;border-radius:6px;cursor:pointer;
+}
+.custom-combobox-trigger:hover{background:var(--surface-3);color:var(--text)}
+.custom-combobox-trigger svg{width:15px;height:15px}
+.custom-options{
+  position:absolute;z-index:120;left:0;right:0;top:calc(100% + 5px);
+  max-height:220px;overflow:auto;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:9px;
+  box-shadow:0 12px 30px rgba(15,23,42,.14);
+  padding:5px;
+  scrollbar-width:thin;
+}
+.custom-options button{
+  width:100%;border:0;background:transparent;color:var(--text);
+  text-align:left;padding:8px 10px;border-radius:6px;
+  font:inherit;font-size:10.5px;font-weight:500;cursor:pointer;
+}
+.custom-options button:hover,
+.custom-options button:focus{
+  background:var(--primary-soft);color:var(--text);outline:none;
+}
+.custom-option-empty{padding:10px;color:var(--muted);font-size:9px}
+html[data-theme="rose"] .custom-options button:hover,
+html[data-theme="rose"] .custom-options button:focus{
+  background:#FFF0F1;
+  color:#7D2F38;
+}
+
+/* Filtros de relatório sem calendário nativo */
+.period-segment{
+  display:flex;gap:3px;padding:3px;
+  background:var(--surface-3);border:1px solid var(--line);border-radius:8px;
+}
+.period-segment button{
+  border:0;background:transparent;color:var(--muted);
+  padding:7px 9px;border-radius:6px;
+  font-size:9.5px;font-weight:600;cursor:pointer;white-space:nowrap;
+}
+.period-segment button.active{
+  background:var(--surface);color:var(--text);
+  box-shadow:0 1px 3px rgba(15,23,42,.10);
+}
+.month-stepper{
+  display:flex;align-items:center;height:34px;
+  border:1px solid var(--line);border-radius:8px;background:var(--surface);
+  overflow:hidden;
+}
+.month-step-btn{
+  width:32px;height:100%;border:0;background:transparent;color:var(--muted);
+  display:grid;place-items:center;cursor:pointer;
+}
+.month-step-btn:hover{background:var(--surface-3);color:var(--text)}
+.month-step-btn svg{width:14px;height:14px}
+.month-step-label{
+  min-width:132px;height:100%;border:0;border-left:1px solid var(--line);border-right:1px solid var(--line);
+  background:transparent;color:var(--text);font-size:10px;font-weight:600;cursor:pointer;padding:0 10px;
+}
+.month-step-label:hover{background:var(--surface-2)}
