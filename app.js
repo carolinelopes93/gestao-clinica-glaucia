@@ -15,6 +15,7 @@ let currentView = 'dashboard';
 let modalContext = null;
 let dashboardStatusFilter = 'ALL';
 let pendingProfilePhotoDataUrl = null;
+let reportPickerYear = new Date().getFullYear();
 const state = {patients:[],agenda:[],applications:[],receivables:[],expenses:[],stock:[],reminders:[],stockMovements:[],users:[],professionals:[],services:[],cashSessions:[],cashMovements:[]};
 
 const viewMeta = {
@@ -125,7 +126,16 @@ function bindEvents(){
   el('printReportBtn')?.addEventListener('click',()=>window.print());
   el('reportPrevMonth')?.addEventListener('click',()=>shiftReportMonth(-1));
   el('reportNextMonth')?.addEventListener('click',()=>shiftReportMonth(1));
-  el('reportMonthLabel')?.addEventListener('click',()=>{el('reportMonth').value=monthISO();syncReportMonthControls();renderReports(activeReportTab());});
+  el('reportOpenMonthPicker')?.addEventListener('click',e=>{e.stopPropagation();openReportMonthPicker();});
+  el('reportPrevYear')?.addEventListener('click',e=>{e.stopPropagation();reportPickerYear--;renderReportMonthPicker();});
+  el('reportNextYear')?.addEventListener('click',e=>{e.stopPropagation();reportPickerYear++;renderReportMonthPicker();});
+  el('reportCurrentMonth')?.addEventListener('click',e=>{e.stopPropagation();goToCurrentReportMonth();});
+  el('reportMonthGrid')?.addEventListener('click',e=>{
+    const b=e.target.closest('[data-report-month]');
+    if(!b)return;
+    chooseReportMonth(b.dataset.reportMonth);
+  });
+  el('reportMonthLabel')?.addEventListener('click',openReportMonthPicker);
   el('reportPeriodButtons')?.addEventListener('click',e=>{
     const b=e.target.closest('[data-report-period]'); if(!b)return;
     el('reportPeriodPreset').value=b.dataset.reportPeriod;
@@ -186,6 +196,7 @@ function bindEvents(){
     if(!e.target.closest('.patient-combobox')) qsa('.patient-results').forEach(x=>x.classList.add('hidden'));
     if(!e.target.closest('.notification-wrap')) el('notificationPanel')?.classList.add('hidden');
     if(!e.target.closest('.theme-picker-wrap')) el('themeMenu')?.classList.add('hidden');
+    if(!e.target.closest('.report-month-control')) closeReportMonthPicker();
     if(!e.target.closest('#globalSearchWrap')) el('globalSearchResults')?.classList.add('hidden');
     if(e.target.closest('[data-close="modal"]')) closeModal();
   });
@@ -199,7 +210,7 @@ function bindEvents(){
   document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('globalSearch')?.focus();}
-    if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');}
+    if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');closeReportMonthPicker();}
   });
 
   el('modalForm')?.addEventListener('submit',saveModal);
@@ -658,6 +669,61 @@ function shiftReportMonth(delta){
   el('reportPeriodPreset').value='month';
   qsa('#reportPeriodButtons [data-report-period]').forEach(b=>b.classList.toggle('active',b.dataset.reportPeriod==='month'));
   syncReportMonthControls();
+  renderReports(activeReportTab());
+}
+
+function renderReportMonthPicker(){
+  const picker=el('reportMonthPicker');
+  const grid=el('reportMonthGrid');
+  const yearLabel=el('reportPickerYear');
+  if(!picker||!grid||!yearLabel) return;
+
+  const current=el('reportMonth')?.value||monthISO();
+  const [selectedYear,selectedMonth]=current.split('-').map(Number);
+  yearLabel.textContent=String(reportPickerYear);
+
+  const labels=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  grid.innerHTML=labels.map((label,index)=>{
+    const month=index+1;
+    const active=reportPickerYear===selectedYear && month===selectedMonth;
+    return `<button type="button" class="${active?'active':''}" data-report-month="${month}">${label}</button>`;
+  }).join('');
+}
+
+function openReportMonthPicker(){
+  const picker=el('reportMonthPicker');
+  if(!picker) return;
+  const value=el('reportMonth')?.value||monthISO();
+  reportPickerYear=Number(value.split('-')[0])||new Date().getFullYear();
+  renderReportMonthPicker();
+  picker.classList.toggle('hidden');
+  refreshIcons();
+}
+
+function closeReportMonthPicker(){
+  el('reportMonthPicker')?.classList.add('hidden');
+}
+
+function chooseReportMonth(month){
+  const m=Number(month);
+  if(!m || m<1 || m>12) return;
+  if(el('reportMonth')){
+    el('reportMonth').value=`${reportPickerYear}-${String(m).padStart(2,'0')}`;
+  }
+  if(el('reportPeriodPreset')) el('reportPeriodPreset').value='month';
+  qsa('#reportPeriodButtons [data-report-period]').forEach(b=>b.classList.toggle('active',b.dataset.reportPeriod==='month'));
+  syncReportMonthControls();
+  closeReportMonthPicker();
+  renderReports(activeReportTab());
+}
+
+function goToCurrentReportMonth(){
+  if(el('reportMonth')) el('reportMonth').value=monthISO();
+  reportPickerYear=new Date().getFullYear();
+  if(el('reportPeriodPreset')) el('reportPeriodPreset').value='month';
+  qsa('#reportPeriodButtons [data-report-period]').forEach(b=>b.classList.toggle('active',b.dataset.reportPeriod==='month'));
+  syncReportMonthControls();
+  closeReportMonthPicker();
   renderReports(activeReportTab());
 }
 function activeReportTab(){return qs('.report-tabs button.active')?.dataset.reportTab||'agenda';}
