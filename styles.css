@@ -153,3 +153,177 @@ html[data-theme="rose"] .sidebar-bottom{
   width:0;
   height:0;
 }
+
+
+/* ===== Tema Rosa corporativo - acabamento final ===== */
+html[data-theme="rose"]{
+  color-scheme:light;
+  --bg:#F8FAFC;
+  --surface:#FFFFFF;
+  --surface-2:#FBFCFE;
+  --surface-3:#F1F5F9;
+  --text:#0F172A;
+  --muted:#475569;
+  --line:#E2E8F0;
+
+  --primary:#FF9EA3;
+  --primary-strong:#D85F68;
+  --primary-soft:#FFF0F1;
+
+  --sidebar:#2A181E;
+  --sidebar-2:#1E1519;
+  --sidebar-text:#FFFFFF;
+  --sidebar-muted:#CBD5E1;
+
+  --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.05);
+}
+
+html[data-theme="rose"] body{
+  background:#F8FAFC;
+  color:#0F172A;
+}
+
+html[data-theme="rose"] .sidebar{
+  background:linear-gradient(180deg,#2A181E 0%,#1E1519 100%);
+  color:#FFFFFF;
+  box-shadow:8px 0 28px rgba(15,23,42,.06);
+}
+
+html[data-theme="rose"] .brand{
+  border-bottom-color:rgba(255,255,255,.09);
+}
+html[data-theme="rose"] .brandmark{
+  background:rgba(255,158,163,.16);
+  color:#FFB8BC;
+  border:1px solid rgba(255,158,163,.28);
+}
+html[data-theme="rose"] .brand strong,
+html[data-theme="rose"] .user-mini strong{
+  color:#FFFFFF;
+}
+html[data-theme="rose"] .brand small,
+html[data-theme="rose"] .nav-label,
+html[data-theme="rose"] .user-mini small,
+html[data-theme="rose"] .logout{
+  color:#CBD5E1;
+}
+
+html[data-theme="rose"] .nav button{
+  color:#E2E8F0;
+}
+html[data-theme="rose"] .nav button:hover{
+  background:rgba(255,255,255,.06);
+  color:#FFFFFF;
+}
+html[data-theme="rose"] .nav button:hover svg{
+  color:#FFB8BC;
+}
+html[data-theme="rose"] .nav button.active{
+  background:rgba(255,158,163,.15);
+  color:#FFFFFF;
+}
+html[data-theme="rose"] .nav button.active:before{
+  background:#FF9EA3;
+}
+html[data-theme="rose"] .nav button.active svg{
+  color:#FF9EA3;
+}
+html[data-theme="rose"] .sidebar-bottom{
+  border-top-color:rgba(255,255,255,.09);
+}
+
+/* painel claro e leitura forte */
+html[data-theme="rose"] .main,
+html[data-theme="rose"] .login-panel{
+  background:#F8FAFC;
+}
+html[data-theme="rose"] .topbar{
+  background:rgba(255,255,255,.96);
+  border-bottom-color:#E2E8F0;
+}
+html[data-theme="rose"] .panel,
+html[data-theme="rose"] .workspace,
+html[data-theme="rose"] .metric-card,
+html[data-theme="rose"] .overview-strip,
+html[data-theme="rose"] .login-card{
+  background:#FFFFFF;
+  border-color:#E2E8F0;
+}
+
+html[data-theme="rose"] .topbar-title h1,
+html[data-theme="rose"] .overview-strip h2,
+html[data-theme="rose"] .panel-head h3,
+html[data-theme="rose"] .metric-card strong,
+html[data-theme="rose"] .data-table td,
+html[data-theme="rose"] .data-table td strong,
+html[data-theme="rose"] .profile-chip strong,
+html[data-theme="rose"] .login-card h2{
+  color:#0F172A;
+}
+html[data-theme="rose"] .page-context p,
+html[data-theme="rose"] .overview-strip p,
+html[data-theme="rose"] .metric-card span,
+html[data-theme="rose"] .metric-card small,
+html[data-theme="rose"] .data-table th,
+html[data-theme="rose"] .data-table td small,
+html[data-theme="rose"] .list-item small,
+html[data-theme="rose"] .field label,
+html[data-theme="rose"] .field-help{
+  color:#475569;
+}
+
+html[data-theme="rose"] .eyebrow,
+html[data-theme="rose"] .link,
+html[data-theme="rose"] .mini-btn{
+  color:#C94F5A;
+}
+
+/* ação principal: rosa da marca com texto escuro */
+html[data-theme="rose"] .btn.primary{
+  background:#FF9EA3;
+  color:#1E293B;
+  border-color:#FF9EA3;
+  box-shadow:0 4px 12px rgba(255,158,163,.22);
+}
+html[data-theme="rose"] .btn.primary:hover{
+  background:#F78F95;
+  border-color:#F78F95;
+  color:#0F172A;
+}
+
+/* ícones, foco e seleções */
+html[data-theme="rose"] .metric-icon{
+  background:#FFF0F1;
+  color:#D85F68;
+}
+html[data-theme="rose"] input:focus,
+html[data-theme="rose"] select:focus,
+html[data-theme="rose"] textarea:focus{
+  border-color:#FF9EA3;
+  box-shadow:0 0 0 3px rgba(255,158,163,.22);
+}
+html[data-theme="rose"] .quick-tabs button.active{
+  border-color:#FF9EA3;
+  background:#FFF0F1;
+  color:#9F3943;
+}
+html[data-theme="rose"] .data-table tbody tr:hover{
+  background:#F8FAFC;
+}
+
+/* badges neutros/ativos do tema sem interferir nos estados semânticos */
+html[data-theme="rose"] .badge:not(.ok):not(.warn):not(.danger){
+  background:#FFF0F1;
+  color:#9F3943;
+}
+
+/* scroll da sidebar continua funcionando sem barra visível */
+.nav{
+  scrollbar-width:none!important;
+  -ms-overflow-style:none;
+}
+.nav::-webkit-scrollbar{
+  display:none!important;
+  width:0!important;
+  height:0!important;
+}
