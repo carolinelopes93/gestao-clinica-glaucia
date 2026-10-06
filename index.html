@@ -373,15 +373,20 @@
         </div>
 
         <div id="helpTopics" class="help-topics">
-          <article id="help-cash" class="help-guide" data-help-keywords="caixa abrir fechar fechamento sangria suprimento dinheiro pix cartão">
-            <div class="help-guide-head"><span class="help-icon"><i data-lucide="circle-dollar-sign"></i></span><div><strong>Como abrir e fechar o Caixa Diário</strong><small>Rotina de início e fim do dia</small></div></div>
+          <article id="help-cash" class="help-guide" data-help-keywords="caixa abrir fechar fechamento sangria suprimento dinheiro pix cartão troco gaveta diferença">
+            <div class="help-guide-head"><span class="help-icon"><i data-lucide="circle-dollar-sign"></i></span><div><strong>Como funciona o Caixa Diário</strong><small>Do início do expediente ao fechamento</small></div></div>
             <ol class="steps">
-              <li><span>1</span><div><strong>Abra o Financeiro → Caixa do Dia</strong><p>Clique em <b>Abrir Caixa do Dia</b>.</p></div></li>
-              <li><span>2</span><div><strong>Informe somente o fundo de troco</strong><p>A data e o usuário são preenchidos automaticamente.</p></div></li>
-              <li><span>3</span><div><strong>Receba normalmente</strong><p>Pagamentos baixados entram automaticamente no Caixa por forma de pagamento.</p></div></li>
-              <li><span>4</span><div><strong>Use Suprimento ou Sangria quando necessário</strong><p>Registre valores adicionais ou retiradas com um motivo simples.</p></div></li>
-              <li><span>5</span><div><strong>Feche o caixa</strong><p>Digite o dinheiro contado na gaveta. O sistema informa automaticamente se bateu e mostra a diferença.</p></div></li>
+              <li><span>1</span><div><strong>Abra o Financeiro → Caixa do Dia</strong><p>Clique em <b>Abrir Caixa do Dia</b> e informe apenas o fundo de troco existente na gaveta.</p></div></li>
+              <li><span>2</span><div><strong>Registre os pagamentos normalmente</strong><p>Quando um recebimento for marcado como <b>PAGO</b>, o sistema classifica o valor por Dinheiro, Pix, Cartão de Débito, Cartão de Crédito ou Convênio.</p></div></li>
+              <li><span>3</span><div><strong>Dinheiro físico é calculado separadamente</strong><p>Pix, cartões e convênios aparecem no resumo, mas não aumentam o valor esperado fisicamente na gaveta.</p></div></li>
+              <li><span>4</span><div><strong>Use Suprimento ou Sangria quando necessário</strong><p><b>Suprimento</b> adiciona dinheiro ao caixa. <b>Sangria / Retirada</b> registra dinheiro retirado, sempre com um motivo.</p></div></li>
+              <li><span>5</span><div><strong>Confira o valor esperado</strong><p>O cálculo é: <b>Fundo inicial + recebimentos em dinheiro + suprimentos − sangrias</b>.</p></div></li>
+              <li><span>6</span><div><strong>Feche o caixa</strong><p>No fim do dia, conte o dinheiro físico da gaveta e informe o valor. O sistema compara o contado com o esperado e mostra se o caixa bateu ou se há diferença.</p></div></li>
             </ol>
+            <div class="help-tip">
+              <i data-lucide="calculator"></i>
+              <div><strong>Exemplo rápido</strong><p>Fundo inicial R$ 100,00 + dinheiro recebido R$ 300,00 + suprimento R$ 50,00 − sangria R$ 30,00 = <b>R$ 420,00 esperados na gaveta</b>. Pix e cartões aparecem no resumo, mas não entram nesse cálculo físico.</p></div>
+            </div>
           </article>
 
           <article id="help-agenda" class="help-guide" data-help-keywords="agenda agendar atendimento baixa concluir consulta profissional">
