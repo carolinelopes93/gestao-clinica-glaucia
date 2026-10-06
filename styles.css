@@ -763,3 +763,20 @@ html[data-theme="rose"] .overview-strip{
   .help-hero-actions{width:100%}
   .help-hero-actions .btn{width:100%}
 }
+
+/* Foto de perfil */
+.profile-chip-button,.user-mini-button{border:0;background:transparent;color:inherit;cursor:pointer;text-align:left}
+.profile-chip-button{padding:3px 5px;border-radius:8px}
+.profile-chip-button:hover{background:var(--surface-3)}
+.user-mini-button{width:100%;padding:0}
+.avatar,.profile-photo-preview{overflow:hidden}
+.avatar img,.profile-photo-preview img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar.has-photo{background:transparent}
+.profile-modal-card{width:min(620px,100%)}
+.profile-photo-body{padding:20px;display:flex;align-items:center;gap:18px}
+.profile-photo-preview{width:112px;height:112px;min-width:112px;border-radius:18px;background:var(--primary-soft);color:var(--primary-strong);display:grid;place-items:center;font-size:38px;font-weight:800;border:1px solid var(--line)}
+.profile-photo-copy{flex:1}
+.profile-photo-copy strong{font-size:14px}
+.profile-photo-copy p{margin:6px 0 14px;color:var(--muted);font-size:10px;line-height:1.55}
+.profile-photo-actions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:600px){.profile-photo-body{align-items:flex-start;flex-direction:column}.profile-photo-preview{width:96px;height:96px;min-width:96px}}
