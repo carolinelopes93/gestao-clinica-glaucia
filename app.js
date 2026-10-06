@@ -46,31 +46,42 @@ async function boot(){
   if(el('clinicName')) el('clinicName').textContent = cfg.CLINIC_NAME || 'Gestão Clínica';
   setDefaultMonths();
   bindEvents();
-
-  // Nunca deixar o usuário olhando para uma tela branca enquanto o Supabase carrega.
   showOnly('loginScreen');
+
+  const loginBtn=el('loginBtn');
+  if(loginBtn){
+    loginBtn.disabled=true;
+    loginBtn.textContent='Carregando sistema...';
+  }
 
   if(!cfg.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY){
     showOnly('setupScreen');
     return;
   }
 
-  let createClient;
-  try{
-    ({createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
-  }catch(primaryErr){
+  let createClient=window.supabase?.createClient;
+  if(!createClient){
     try{
-      ({createClient}=await import('https://esm.sh/@supabase/supabase-js@2'));
-    }catch(fallbackErr){
-      throw new Error('Não foi possível carregar a conexão do sistema. Recarregue a página em alguns segundos.');
+      ({createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+    }catch(primaryErr){
+      try{
+        ({createClient}=await import('https://esm.sh/@supabase/supabase-js@2'));
+      }catch(fallbackErr){
+        throw new Error('Não foi possível carregar a conexão do sistema. Atualize a página.');
+      }
     }
   }
 
-  supabase = createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{
+  supabase=createClient(cfg.SUPABASE_URL,cfg.SUPABASE_ANON_KEY,{
     auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}
   });
 
-  const {data:{session}} = await supabase.auth.getSession();
+  if(loginBtn){
+    loginBtn.disabled=false;
+    loginBtn.textContent='Entrar no sistema';
+  }
+
+  const {data:{session}}=await supabase.auth.getSession();
   if(session){
     await enterApp(session.user);
   }else{
@@ -91,12 +102,15 @@ async function boot(){
 function handleBootError(err){
   console.error('Falha ao iniciar o sistema:',err);
   try{showOnly('loginScreen');}catch(_e){}
+  const btn=el('loginBtn');
+  if(btn){
+    btn.disabled=true;
+    btn.textContent='Sistema indisponível';
+  }
   const box=el('loginError');
   if(box){
-    box.textContent=err?.message||'Não foi possível iniciar o sistema. Recarregue a página.';
+    box.textContent=err?.message||'Não foi possível iniciar o sistema. Atualize a página.';
     box.classList.remove('hidden');
-  }else{
-    document.body.innerHTML='<div style="padding:32px;font-family:Arial,sans-serif;color:#0f172a"><h2>Não foi possível iniciar o sistema</h2><p>Recarregue a página em alguns segundos.</p></div>';
   }
 }
 
@@ -251,6 +265,12 @@ async function login(e){
 
   if(!email || !password){
     errorBox.textContent='Informe o e-mail e a senha.';
+    errorBox.classList.remove('hidden');
+    return;
+  }
+
+  if(!supabase){
+    errorBox.textContent='O sistema ainda está carregando. Aguarde alguns segundos e tente novamente.';
     errorBox.classList.remove('hidden');
     return;
   }
