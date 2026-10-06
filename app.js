@@ -51,7 +51,7 @@ async function boot(){
 }
 
 function showOnly(id){ ['setupScreen','loginScreen','app'].forEach(x=>el(x).classList.add('hidden')); el(id).classList.remove('hidden'); }
-function setDefaultMonths(){ ['agendaMonth','appMonth','expenseMonth','reportMonth'].forEach(id=>{ if(el(id)) el(id).value=monthISO(); }); }
+function setDefaultMonths(){ ['agendaMonth','appMonth','expenseMonth','reportMonth'].forEach(id=>{ if(el(id)) el(id).value=monthISO(); }); if(el('reportMonth')) syncReportMonthControls?.(); }
 function bindEvents(){
   el('loginForm')?.addEventListener('submit',login);
   el('bootstrapBtn')?.addEventListener('click',bootstrapFirstUser);
@@ -59,6 +59,15 @@ function bindEvents(){
   el('refreshBtn')?.addEventListener('click',()=>loadAll(true));
   el('topAction')?.addEventListener('click',()=>handleAction(viewMeta[currentView]?.[3]));
   el('printReportBtn')?.addEventListener('click',()=>window.print());
+  el('reportPrevMonth')?.addEventListener('click',()=>shiftReportMonth(-1));
+  el('reportNextMonth')?.addEventListener('click',()=>shiftReportMonth(1));
+  el('reportMonthLabel')?.addEventListener('click',()=>{el('reportMonth').value=monthISO();syncReportMonthControls();renderReports(activeReportTab());});
+  el('reportPeriodButtons')?.addEventListener('click',e=>{
+    const b=e.target.closest('[data-report-period]'); if(!b)return;
+    el('reportPeriodPreset').value=b.dataset.reportPeriod;
+    qsa('#reportPeriodButtons [data-report-period]').forEach(x=>x.classList.toggle('active',x===b));
+    renderReports(activeReportTab());
+  });
   el('exportExcelBtn')?.addEventListener('click',exportCurrentReportCsv);
   el('newUserBtn')?.addEventListener('click',()=>openUserForm());
   el('quickAppointmentBtn')?.addEventListener('click',()=>openForm('appointment'));
@@ -110,7 +119,20 @@ function bindEvents(){
     const q=e.target.closest('[data-quick]'); if(q) handleAction(q.dataset.quick);
     const pr=e.target.closest('[data-patient-result]'); if(pr) choosePatient(pr.dataset.patientResult,pr.dataset.patientName||'');
     const prof=e.target.closest('[data-professional-result]'); if(prof) chooseProfessional(prof.dataset.professionalResult,prof.dataset.professionalName||'');
+    const stockChoice=e.target.closest('[data-stock-item]');
+    if(stockChoice){
+      const wrap=stockChoice.closest('.stock-item-combobox');
+      const input=wrap?.querySelector('.stock-item-input');
+      if(input) input.value=stockChoice.dataset.stockItem||'';
+      wrap?.querySelector('.stock-item-options')?.classList.add('hidden');
+    }
+    const stockTrigger=e.target.closest('.custom-combobox-trigger');
+    if(stockTrigger){
+      const wrap=stockTrigger.closest('.stock-item-combobox'), input=wrap?.querySelector('.stock-item-input');
+      if(input) renderStockItemOptions(input);
+    }
     if(!e.target.closest('.patient-combobox')) qsa('.patient-results').forEach(x=>x.classList.add('hidden'));
+    if(!e.target.closest('.stock-item-combobox')) qsa('.stock-item-options').forEach(x=>x.classList.add('hidden'));
     if(!e.target.closest('.notification-wrap')) el('notificationPanel')?.classList.add('hidden');
     if(!e.target.closest('.theme-picker-wrap')) el('themeMenu')?.classList.add('hidden');
     if(!e.target.closest('#globalSearchWrap')) el('globalSearchResults')?.classList.add('hidden');
@@ -121,6 +143,7 @@ function bindEvents(){
     if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);
     if(e.target.matches('.professional-search-input')) renderProfessionalResults(e.target);
     if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
+    if(e.target.matches('.stock-item-input')) renderStockItemOptions(e.target);
   });
 
   document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
@@ -134,7 +157,7 @@ function bindEvents(){
   [['patientSearch','patients'],['agendaSearch','agenda'],['applicationSearch','applications'],['receivableSearch','receivables'],['expenseSearch','expenses'],['professionalSearch','professionals'],['serviceSearch','services'],['stockSearch','stock'],['reminderSearch','reminders']]
     .forEach(([id,v])=>el(id)?.addEventListener('input',()=>render(v)));
 
-  ['agendaMonth','appMonth','expenseMonth','reportMonth','reportPeriodPreset','receivableStatus','stockFilter','reminderStatus']
+  ['agendaMonth','appMonth','expenseMonth','reportMonth','receivableStatus','stockFilter','reminderStatus']
     .forEach(id=>el(id)?.addEventListener('change',()=>render(id==='reportMonth'?'reports':currentView)));
 }
 
@@ -422,6 +445,20 @@ function renderHelpSearch(){
   qsa('.help-guide').forEach(card=>{const show=!q||(card.dataset.helpKeywords+' '+card.textContent).toLowerCase().includes(q);card.classList.toggle('hidden',!show);if(show)visible++;});
   el('helpNoResults')?.classList.toggle('hidden',visible>0);
 }
+function syncReportMonthControls(){
+  const value=el('reportMonth')?.value||monthISO();
+  if(el('reportMonth')) el('reportMonth').value=value;
+  const [y,m]=value.split('-').map(Number);
+  if(el('reportMonthLabel')) el('reportMonthLabel').textContent=new Date(y,m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'}).replace(/^./,x=>x.toUpperCase());
+}
+function shiftReportMonth(delta){
+  const value=el('reportMonth')?.value||monthISO(), [y,m]=value.split('-').map(Number), d=new Date(y,m-1+delta,1);
+  el('reportMonth').value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+  el('reportPeriodPreset').value='month';
+  qsa('#reportPeriodButtons [data-report-period]').forEach(b=>b.classList.toggle('active',b.dataset.reportPeriod==='month'));
+  syncReportMonthControls();
+  renderReports(activeReportTab());
+}
 function activeReportTab(){return qs('.report-tabs button.active')?.dataset.reportTab||'agenda';}
 function renderReports(tab=activeReportTab()){
   const month=el('reportMonth')?.value||monthISO(), preset=el('reportPeriodPreset')?.value||'month', now=new Date(), week=new Date(now);week.setDate(now.getDate()-((now.getDay()+6)%7));
@@ -565,11 +602,20 @@ window.editUser=id=>openUserForm(id);
 function badge(v){ const t=String(v||'').toUpperCase(); const cls=/PAGO|FINALIZADO|CONCLUÍDO|ATENDIDO|BAIXA/.test(t)?'ok':/CANCELADO|ATRASADO|ALTA/.test(t)?'danger':'warn'; return `<span class="badge ${cls}">${escapeHtml(v||'')}</span>`; }
 function toast(msg,error=false){ const t=el('toast');t.textContent=msg;t.className='toast'+(error?' error':'');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.add('hidden'),3200); }
 function patientOptions(selected=''){ return `<option value="">Selecione</option>`+state.patients.filter(p=>p.active!==false).sort((a,b)=>a.name.localeCompare(b.name)).map(p=>`<option value="${p.id}" ${p.id===selected?'selected':''}>${escapeHtml(p.name)}</option>`).join(''); }
+function normalizeSpecialtyLabel(v){
+  const raw=String(v||'').trim();
+  if(!raw)return '';
+  const k=raw.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+  if(k==='medico'||k==='medicina')return 'Medicina';
+  return raw.replace(/\s+/g,' ').replace(/\b\w/g,m=>m.toUpperCase());
+}
 function specialtyOptions(selected=''){
-  const dynamic=[...state.professionals.map(x=>x.specialty),...state.services.map(x=>x.specialty)].filter(Boolean);
+  const dynamic=[...state.professionals.map(x=>x.specialty),...state.services.map(x=>x.specialty)]
+    .map(normalizeSpecialtyLabel).filter(Boolean);
   const base=['Clínica Geral','Enfermagem','Estética','Fisioterapia','Medicina','Nutrição','Odontologia','Psicologia','Outra'];
-  const values=[...new Set([...base,...dynamic].map(x=>String(x).trim()).filter(Boolean))];
-  return '<option value="">Selecione</option>'+values.map(v=>`<option value="${escapeHtml(v)}" ${v===selected?'selected':''}>${escapeHtml(v)}</option>`).join('');
+  const values=[...new Set([...base,...dynamic])];
+  const current=normalizeSpecialtyLabel(selected);
+  return '<option value="">Selecione</option>'+values.map(v=>`<option value="${escapeHtml(v)}" ${v===current?'selected':''}>${escapeHtml(v)}</option>`).join('');
 }
 function dosageUnitOptions(selected=''){
   const values=['mg','mcg','g','mL','UI','gotas','comprimido(s)','cápsula(s)','ampola(s)','seringa(s)','aplicação(ões)'];
@@ -579,10 +625,19 @@ function medicationField(value=''){
   return `<div class="field"><label>Medicação</label><input name="medication" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite a medicação..." /></div>`;
 }
 function stockItemField(value=''){
+  return `<div class="field span2"><label>Item</label><div class="custom-combobox stock-item-combobox"><input class="custom-combobox-input stock-item-input" name="name" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha um item..." /><button class="custom-combobox-trigger" type="button" tabindex="-1"><i data-lucide="chevron-down"></i></button><div class="custom-options stock-item-options hidden"></div></div><small class="field-help">Digite para pesquisar ou escolha uma opção.</small></div>`;
+}
+function stockItemChoices(term=''){
   const base=['Álcool 70%','Algodão','Gaze','Luva de procedimento','Máscara descartável','Seringa 1 mL','Seringa 3 mL','Seringa 5 mL','Agulha','Curativo','Papel toalha','Soro fisiológico'];
   const existing=state.stock.map(x=>x.name).filter(Boolean);
-  const values=[...new Set([...base,...existing])];
-  return `<div class="field span2"><label>Item</label><input name="name" list="stockItemOptions" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha um item..." /><datalist id="stockItemOptions">${values.map(v=>`<option value="${escapeHtml(v)}"></option>`).join('')}</datalist><small class="field-help">Você pode escolher uma sugestão ou cadastrar outro item.</small></div>`;
+  const q=String(term||'').toLowerCase();
+  return [...new Set([...existing,...base])].filter(v=>!q||String(v).toLowerCase().includes(q)).slice(0,18);
+}
+function renderStockItemOptions(input){
+  const wrap=input.closest('.stock-item-combobox'), box=wrap?.querySelector('.stock-item-options'); if(!box)return;
+  const items=stockItemChoices(input.value);
+  box.innerHTML=items.length?items.map(v=>`<button type="button" data-stock-item="${escapeHtml(v)}">${escapeHtml(v)}</button>`).join(''):'<div class="custom-option-empty">Nenhuma opção encontrada.</div>';
+  box.classList.remove('hidden');
 }
 function stockCategoryOptions(selected=''){
   const values=['Medicamento','Material descartável','Material de limpeza','Material de escritório','Insumo','EPI','Outro'];
