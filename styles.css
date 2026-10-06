@@ -791,3 +791,183 @@ html[data-theme="rose"] .overview-strip{
 .professional-combobox>.professional-search-input{
   padding-left:12px!important;
 }
+
+
+/* ===== Tipografia corporativa refinada ===== */
+html{font-size:13px}
+body{
+  font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:13px;
+  line-height:1.45;
+  font-weight:400;
+  letter-spacing:0;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+/* Cabeçalho */
+.topbar-title .eyebrow{font-size:8px!important;font-weight:700!important;letter-spacing:.08em!important}
+.topbar-title h1{
+  font-size:20px!important;
+  line-height:1.15!important;
+  font-weight:650!important;
+  letter-spacing:-.025em!important;
+}
+.page-context p{
+  font-size:11px!important;
+  line-height:1.45!important;
+  font-weight:400!important;
+}
+
+/* Marca e navegação */
+.brand strong{font-size:12px!important;font-weight:650!important}
+.brand small{font-size:9px!important;font-weight:400!important}
+.nav-label{
+  font-size:8.5px!important;
+  font-weight:650!important;
+  letter-spacing:.07em!important;
+}
+.nav button{
+  font-size:12px!important;
+  line-height:1.25!important;
+  font-weight:500!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
+}
+.nav button.active{font-weight:600!important}
+.user-mini strong,.profile-chip strong{font-size:10px!important;font-weight:600!important}
+.user-mini small,.profile-chip small{font-size:8px!important}
+
+/* Botões */
+.btn{
+  min-height:34px!important;
+  padding:7px 11px!important;
+  font-size:11px!important;
+  line-height:1!important;
+  font-weight:600!important;
+}
+.btn.primary{font-weight:650!important}
+.mini-btn{font-size:9px!important;font-weight:600!important}
+
+/* Cards e indicadores */
+.metric-card{
+  min-height:76px!important;
+  padding:11px 13px!important;
+  gap:10px!important;
+}
+.metric-card span{font-size:9px!important;font-weight:550!important}
+.metric-card strong{
+  margin:3px 0 1px!important;
+  font-size:20px!important;
+  line-height:1.05!important;
+  font-weight:650!important;
+  letter-spacing:-.025em!important;
+}
+.metric-card small{font-size:8px!important;font-weight:400!important}
+.panel-head{padding-top:12px!important;padding-bottom:12px!important}
+.panel-head h3{
+  font-size:13px!important;
+  line-height:1.25!important;
+  font-weight:600!important;
+}
+.overview-strip h2{
+  font-size:20px!important;
+  line-height:1.15!important;
+  font-weight:650!important;
+}
+.overview-strip p{font-size:10px!important;font-weight:400!important}
+.eyebrow{
+  font-size:8px!important;
+  font-weight:700!important;
+  letter-spacing:.07em!important;
+}
+
+/* Formulários */
+.field label{
+  font-size:9px!important;
+  line-height:1.2!important;
+  font-weight:650!important;
+  letter-spacing:.01em!important;
+}
+.field-help{font-size:8.5px!important;line-height:1.4!important}
+.formgrid input,
+.formgrid select,
+.formgrid textarea,
+.toolbar input,
+.toolbar select,
+.report-actions input,
+.report-actions select{
+  font-family:Inter,"Segoe UI",Roboto,Arial,sans-serif!important;
+  font-size:11px!important;
+  font-weight:400!important;
+}
+.formgrid input,.formgrid select{min-height:38px!important}
+.formgrid textarea{line-height:1.45!important}
+.modal-head h2{
+  font-size:17px!important;
+  line-height:1.2!important;
+  font-weight:650!important;
+}
+.modal-head .eyebrow{font-size:8px!important}
+
+/* Tabelas */
+.data-table th{
+  padding:8px 9px!important;
+  font-size:8px!important;
+  line-height:1.2!important;
+  font-weight:700!important;
+  letter-spacing:.05em!important;
+}
+.data-table td{
+  padding:8px 9px!important;
+  font-size:10px!important;
+  line-height:1.35!important;
+  font-weight:400!important;
+}
+.data-table td strong{font-weight:600!important}
+.data-table td small{font-size:8px!important}
+.badge{
+  font-size:7.5px!important;
+  line-height:1!important;
+  font-weight:700!important;
+}
+
+/* Listas e abas */
+.list-item strong{font-size:10px!important;font-weight:600!important}
+.list-item small{font-size:8.5px!important}
+.module-tabs button,
+.report-tabs button{
+  font-size:10px!important;
+  font-weight:600!important;
+  padding:7px 10px!important;
+}
+.quick-tabs button{
+  font-size:9px!important;
+  font-weight:600!important;
+}
+
+/* Relatórios */
+.report-title h2{
+  font-size:16px!important;
+  line-height:1.2!important;
+  font-weight:650!important;
+}
+.report-title p{font-size:9px!important}
+.report-topbar{padding:10px 12px!important}
+.report-actions{gap:6px!important}
+
+/* Ajuda e caixa */
+.help-guide-head strong{font-size:11px!important;font-weight:600!important}
+.help-guide-head small{font-size:8.5px!important}
+.steps strong{font-size:10px!important;font-weight:600!important}
+.steps p{font-size:9px!important}
+.cash-header h2{font-size:17px!important;font-weight:650!important}
+.cash-header p{font-size:9px!important}
+.cash-kpis span{font-size:8.5px!important;font-weight:550!important}
+.cash-kpis strong{font-size:16px!important;font-weight:650!important}
+
+/* Campos monetários */
+.money-wrap>span{
+  font-size:11px!important;
+  font-weight:600!important;
+}
