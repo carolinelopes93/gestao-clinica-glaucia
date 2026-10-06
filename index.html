@@ -145,15 +145,17 @@
             </div>
           </div>
 
-          <label class="theme-picker" title="Tema visual">
-            <i data-lucide="palette"></i>
-            <select id="themeSelect" aria-label="Selecionar tema">
-              <option value="rose">Rosa</option>
-              <option value="blue">Azul</option>
-              <option value="light">Claro</option>
-              <option value="dark">Noturno</option>
-            </select>
-          </label>
+          <div class="theme-picker-wrap">
+            <button id="themeButton" class="theme-icon-btn" type="button" title="Alterar tema" aria-label="Alterar tema">
+              <i data-lucide="palette"></i>
+            </button>
+            <div id="themeMenu" class="theme-menu hidden">
+              <button type="button" data-theme-choice="rose"><span class="theme-dot rose"></span>Rosa</button>
+              <button type="button" data-theme-choice="blue"><span class="theme-dot blue"></span>Azul</button>
+              <button type="button" data-theme-choice="light"><span class="theme-dot light"></span>Claro</button>
+              <button type="button" data-theme-choice="dark"><span class="theme-dot dark"></span>Noturno</button>
+            </div>
+          </div>
 
           <div class="profile-chip">
             <div id="topUserAvatar" class="avatar small">G</div>
