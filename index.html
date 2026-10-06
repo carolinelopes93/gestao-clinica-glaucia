@@ -431,10 +431,24 @@
                 <button type="button" data-report-period="week">Esta semana</button>
               </div>
               <input id="reportPeriodPreset" type="hidden" value="month" />
-              <div class="month-stepper" aria-label="Mês do relatório">
-                <button id="reportPrevMonth" type="button" class="month-step-btn" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
-                <button id="reportMonthLabel" type="button" class="month-step-label">Outubro de 2026</button>
-                <button id="reportNextMonth" type="button" class="month-step-btn" title="Próximo mês"><i data-lucide="chevron-right"></i></button>
+              <div class="report-month-control">
+                <div class="month-stepper" aria-label="Mês do relatório">
+                  <button id="reportPrevMonth" type="button" class="month-step-btn" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
+                  <button id="reportMonthLabel" type="button" class="month-step-label" title="Escolher mês e ano">Outubro de 2026</button>
+                  <button id="reportOpenMonthPicker" type="button" class="month-calendar-btn" title="Escolher mês e ano" aria-label="Abrir calendário de mês"><i data-lucide="calendar-days"></i></button>
+                  <button id="reportNextMonth" type="button" class="month-step-btn" title="Mês seguinte"><i data-lucide="chevron-right"></i></button>
+                </div>
+                <div id="reportMonthPicker" class="month-picker-popover hidden">
+                  <div class="month-picker-head">
+                    <button id="reportPrevYear" type="button" class="month-picker-nav" title="Ano anterior"><i data-lucide="chevron-left"></i></button>
+                    <strong id="reportPickerYear"></strong>
+                    <button id="reportNextYear" type="button" class="month-picker-nav" title="Ano seguinte"><i data-lucide="chevron-right"></i></button>
+                  </div>
+                  <div id="reportMonthGrid" class="month-picker-grid"></div>
+                  <div class="month-picker-footer">
+                    <button id="reportCurrentMonth" type="button">Ir para este mês</button>
+                  </div>
+                </div>
               </div>
               <input id="reportMonth" type="hidden" />
               <button id="exportExcelBtn" class="btn secondary"><i data-lucide="sheet"></i>Exportar Excel</button>
