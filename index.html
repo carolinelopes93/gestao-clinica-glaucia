@@ -88,6 +88,8 @@
         </div>
         <div class="nav-group">
           <span class="nav-label">Cadastros & gestão</span>
+          <button data-view="professionals"><i data-lucide="stethoscope"></i><span class="nav-text">Profissionais</span></button>
+          <button data-view="services"><i data-lucide="briefcase-medical"></i><span class="nav-text">Serviços</span></button>
           <button data-view="stock"><i data-lucide="boxes"></i><span class="nav-text">Estoque</span></button>
           <button data-view="reminders"><i data-lucide="list-checks"></i><span class="nav-text">Lembretes</span></button>
           <button id="usersNavBtn" data-view="users" class="hidden"><i data-lucide="user-cog"></i><span class="nav-text">Usuários</span></button>
@@ -235,9 +237,33 @@
 
       <section id="view-patients" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="patientSearch" class="search" placeholder="Pesquisar por nome, telefone ou CPF" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Paciente</th><th>Telefone</th><th>CPF</th><th>Cobrança</th><th>Observações</th><th></th></tr></thead><tbody id="patientRows"></tbody></table></div></div></section>
       <section id="view-applications" class="view"><div class="workspace"><div class="toolbar"><input id="appMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="applicationSearch" class="search" placeholder="Pesquisar paciente ou medicação" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Paciente</th><th>Medicação</th><th>Dose</th><th>Valor</th><th>Pagamento</th><th></th></tr></thead><tbody id="applicationRows"></tbody></table></div></div></section>
-      <section id="view-finance" class="view"><div class="metrics finance-metrics"><article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-down-left"></i></div><div><span>Entradas do mês</span><strong id="fIncome">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-up-right"></i></div><div><span>Despesas do mês</span><strong id="fExpenses">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="landmark"></i></div><div><span>Saldo do mês</span><strong id="fBalance">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="clock-3"></i></div><div><span>A receber</span><strong id="fPending">R$ 0,00</strong></div></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Últimos recebimentos</h3></div><div id="financeIncomeList" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Últimas despesas</h3></div><div id="financeExpenseList" class="list"></div></article></div></section>
+      <section id="view-finance" class="view">
+        <div class="module-tabs">
+          <button class="active" data-finance-tab="overview">Visão geral</button>
+          <button data-view-go="receivables">Contas a receber</button>
+          <button data-view-go="expenses">Contas a pagar</button>
+          <button data-finance-tab="commissions">Comissões</button>
+          <button data-finance-tab="methods">Formas de pagamento</button>
+        </div>
+        <div id="financeOverviewPanel">
+          <div class="metrics finance-metrics">
+            <article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-down-left"></i></div><div><span>Entradas do mês</span><strong id="fIncome">R$ 0,00</strong></div></article>
+            <article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-up-right"></i></div><div><span>Despesas do mês</span><strong id="fExpenses">R$ 0,00</strong></div></article>
+            <article class="metric-card"><div class="metric-icon"><i data-lucide="landmark"></i></div><div><span>Saldo do mês</span><strong id="fBalance">R$ 0,00</strong></div></article>
+            <article class="metric-card"><div class="metric-icon"><i data-lucide="clock-3"></i></div><div><span>A receber</span><strong id="fPending">R$ 0,00</strong></div></article>
+          </div>
+          <div class="dashboard-grid">
+            <article class="panel"><div class="panel-head"><h3>Últimos recebimentos</h3></div><div id="financeIncomeList" class="list"></div></article>
+            <article class="panel"><div class="panel-head"><h3>Últimas despesas</h3></div><div id="financeExpenseList" class="list"></div></article>
+          </div>
+        </div>
+        <div id="financeCommissionsPanel" class="workspace hidden"><div class="panel-head"><div><span class="eyebrow">REPASSES</span><h3>Comissões por profissional</h3></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Profissional</th><th>% padrão</th><th>Base no mês</th><th>Comissão estimada</th></tr></thead><tbody id="commissionRows"></tbody></table></div></div>
+        <div id="financeMethodsPanel" class="workspace hidden"><div class="panel-head"><div><span class="eyebrow">RECEBIMENTOS</span><h3>Resumo por forma de pagamento</h3></div></div><div id="paymentMethodCards" class="payment-method-grid"></div></div>
+      </section>
       <section id="view-receivables" class="view"><div class="workspace"><div class="toolbar"><select id="receivableStatus"><option value="">Todos</option><option>PENDENTE</option><option>PAGO</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="receivableSearch" class="search" placeholder="Pesquisar paciente ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Vencimento</th><th>Paciente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Forma</th><th></th></tr></thead><tbody id="receivableRows"></tbody></table></div></div></section>
       <section id="view-expenses" class="view"><div class="workspace"><div class="toolbar"><input id="expenseMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="expenseSearch" class="search" placeholder="Pesquisar categoria ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Forma</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></div></section>
+      <section id="view-professionals" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="professionalSearch" class="search" placeholder="Pesquisar profissional ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Profissional</th><th>Especialidade</th><th>Telefone</th><th>Comissão</th><th>Status</th><th></th></tr></thead><tbody id="professionalRows"></tbody></table></div></div></section>
+      <section id="view-services" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="serviceSearch" class="search" placeholder="Pesquisar serviço ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Serviço</th><th>Especialidade</th><th>Duração</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody id="serviceRows"></tbody></table></div></div></section>
       <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="stockSearch" class="search" placeholder="Pesquisar medicamento, material ou lote" /></div><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
       <section id="view-reminders" class="view"><div class="workspace"><div class="toolbar"><select id="reminderStatus"><option value="">Todos</option><option value="ABERTO">Abertos</option><option value="CONCLUÍDO">Concluídos</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="reminderSearch" class="search" placeholder="Pesquisar tarefa ou responsável" /></div></div><div id="reminderCards" class="reminder-grid"></div></div></section>
 
@@ -321,7 +347,34 @@
         </div>
       </section>
 
-      <section id="view-reports" class="view"><div class="workspace report-workspace"><div class="toolbar"><input id="reportMonth" type="month" /><button id="printReportBtn" class="btn primary">Gerar / Imprimir PDF</button></div><div id="reportArea" class="report-area"><div class="report-title"><h2>Fechamento mensal</h2><p id="reportPeriod"></p></div><div class="metrics report-metrics"><article class="metric-card"><div class="metric-icon"><i data-lucide="circle-dollar-sign"></i></div><div><span>Entradas</span><strong id="rIncome">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="receipt"></i></div><div><span>Despesas</span><strong id="rExpenses">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="landmark"></i></div><div><span>Saldo</span><strong id="rBalance">R$ 0,00</strong></div></article><article class="metric-card"><div class="metric-icon"><i data-lucide="clock"></i></div><div><span>Pendências</span><strong id="rPending">R$ 0,00</strong></div></article></div><div class="dashboard-grid"><article class="panel"><div class="panel-head"><h3>Resumo de aplicações</h3></div><div id="reportApps" class="list"></div></article><article class="panel"><div class="panel-head"><h3>Resumo financeiro</h3></div><div id="reportFinance" class="list"></div></article></div></div></div></section>
+      <section id="view-reports" class="view">
+        <div class="workspace report-workspace">
+          <div class="report-topbar">
+            <div class="report-tabs">
+              <button class="active" data-report-tab="agenda">Agenda</button>
+              <button data-report-tab="finance">Financeiro</button>
+              <button data-report-tab="treatments">Tratamentos</button>
+              <button data-report-tab="patients">Pacientes</button>
+            </div>
+            <div class="report-actions">
+              <select id="reportPeriodPreset"><option value="month">Este mês</option><option value="today">Hoje</option><option value="week">Esta semana</option></select>
+              <input id="reportMonth" type="month" />
+              <button id="exportExcelBtn" class="btn secondary"><i data-lucide="sheet"></i>Exportar Excel</button>
+              <button id="printReportBtn" class="btn primary"><i data-lucide="file-down"></i>Exportar PDF</button>
+            </div>
+          </div>
+          <div id="reportArea" class="report-area">
+            <div class="report-title"><h2 id="reportTitle">Relatório de agenda</h2><p id="reportPeriod"></p></div>
+            <div class="metrics report-metrics">
+              <article class="metric-card"><div class="metric-icon"><i data-lucide="calendar-days"></i></div><div><span>Atendimentos</span><strong id="rAppointments">0</strong></div></article>
+              <article class="metric-card"><div class="metric-icon"><i data-lucide="circle-dollar-sign"></i></div><div><span>Entradas</span><strong id="rIncome">R$ 0,00</strong></div></article>
+              <article class="metric-card"><div class="metric-icon"><i data-lucide="receipt"></i></div><div><span>Despesas</span><strong id="rExpenses">R$ 0,00</strong></div></article>
+              <article class="metric-card"><div class="metric-icon"><i data-lucide="users"></i></div><div><span>Pacientes ativos</span><strong id="rPatients">0</strong></div></article>
+            </div>
+            <div id="reportDynamic" class="report-dynamic"></div>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
