@@ -82,6 +82,7 @@ function bindEvents(){
   });
 
   el('helpSearch')?.addEventListener('input',renderHelpSearch);
+  el('whatsappSupportBtn')?.addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent('Olá, preciso de ajuda com o sistema Gestão Clínica.'),'_blank','noopener'));
   document.addEventListener('click',e=>{
     const guide=e.target.closest('[data-help-topic]');
     if(guide){switchView('help');setTimeout(()=>document.getElementById(guide.dataset.helpTopic)?.scrollIntoView({behavior:'smooth',block:'start'}),50);}
@@ -114,6 +115,7 @@ function bindEvents(){
     if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
   });
 
+  document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
   document.addEventListener('keydown',e=>{
     if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('globalSearch')?.focus();}
     if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');}
@@ -284,8 +286,6 @@ function renderServices(){
 function renderStock(){ const q=el('stockSearch').value.toLowerCase(),f=el('stockFilter').value, now=new Date(), in60=new Date(Date.now()+60*864e5); const rows=state.stock.filter(s=>[s.name,s.category,s.lot].join(' ').toLowerCase().includes(q)).filter(s=>f!=='low'||Number(s.current_qty)<=Number(s.minimum_qty||0)).filter(s=>f!=='expiring'||(s.expiry_date&&new Date(s.expiry_date)<=in60)); el('stockRows').innerHTML=rows.length?rows.map(s=>`<tr><td><strong>${escapeHtml(s.name)}</strong></td><td>${escapeHtml(s.category||'')}</td><td>${Number(s.current_qty||0)} ${escapeHtml(s.unit||'')}</td><td>${Number(s.minimum_qty||0)}</td><td>${escapeHtml(s.lot||'')}</td><td>${s.expiry_date?dateBR(s.expiry_date):''}</td><td class="row-actions"><button class="mini-btn" onclick="window.stockMove('${s.id}')">Movimentar</button><button class="mini-btn" onclick="window.appEdit('stock','${s.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('stock_items','${s.id}','item')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum item encontrado.</td></tr>'; }
 function renderReminders(){ const q=el('reminderSearch').value.toLowerCase(),st=el('reminderStatus').value; const rows=state.reminders.filter(r=>(!st||r.status===st)&&[r.title,r.description,r.responsible].join(' ').toLowerCase().includes(q)); el('reminderCards').innerHTML=rows.length?rows.map(r=>`<article class="reminder-card ${r.status!=='CONCLUÍDO'&&r.date&&r.date<todayISO()?'overdue':''}">${badge(r.priority||'NORMAL')}<h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.description||'')}</p><div class="reminder-foot"><span>${dateBR(r.date)} ${escapeHtml(r.time||'')}</span><span>${escapeHtml(r.responsible||'')}</span></div><div class="row-actions">${r.status!=='CONCLUÍDO'?`<button class="mini-btn" onclick="window.completeReminder('${r.id}')">Concluir</button>`:''}<button class="mini-btn" onclick="window.appEdit('reminder','${r.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('team_reminders','${r.id}','lembrete')">Excluir</button></div></article>`).join(''):'<div class="empty">Nenhum lembrete encontrado.</div>'; }
 function renderFinance(){ const month=monthISO(), paid=state.receivables.filter(r=>r.status==='PAGO'&&String(r.paid_at||r.due_date||'').slice(0,7)===month), exp=state.expenses.filter(r=>String(r.date||'').slice(0,7)===month), pending=state.receivables.filter(r=>r.status!=='PAGO'); const income=paid.reduce((s,r)=>s+Number(r.amount||0),0), expenses=exp.reduce((s,r)=>s+Number(r.amount||0),0); el('fIncome').textContent=money(income);el('fExpenses').textContent=money(expenses);el('fBalance').textContent=money(income-expenses);el('fPending').textContent=money(pending.reduce((s,r)=>s+Number(r.amount||0),0)); el('financeIncomeList').innerHTML=paid.slice(0,6).map(r=>`<div class="list-item"><div><strong>${escapeHtml(r.patient_name||r.description||'Recebimento')}</strong><small>${dateBR(r.paid_at||r.due_date)}</small></div><strong>${money(r.amount)}</strong></div>`).join('')||'<div class="empty">Sem recebimentos no mês.</div>'; el('financeExpenseList').innerHTML=exp.slice(0,6).map(r=>`<div class="list-item"><div><strong>${escapeHtml(r.description||r.category||'Despesa')}</strong><small>${dateBR(r.date)}</small></div><strong>${money(r.amount)}</strong></div>`).join('')||'<div class="empty">Sem despesas no mês.</div>'; }
-function renderReports(){ const month=el('reportMonth').value||monthISO(), paid=state.receivables.filter(r=>r.status==='PAGO'&&String(r.paid_at||r.due_date||'').slice(0,7)===month), exp=state.expenses.filter(r=>String(r.date||'').startsWith(month)), apps=state.applications.filter(a=>String(a.date||'').startsWith(month)), pending=state.receivables.filter(r=>r.status!=='PAGO'); const income=paid.reduce((s,r)=>s+Number(r.amount||0),0), expenses=exp.reduce((s,r)=>s+Number(r.amount||0),0); el('reportPeriod').textContent=new Date(month+'-01T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'});el('rIncome').textContent=money(income);el('rExpenses').textContent=money(expenses);el('rBalance').textContent=money(income-expenses);el('rPending').textContent=money(pending.reduce((s,r)=>s+Number(r.amount||0),0)); el('reportApps').innerHTML=`<div class="list-item"><div><strong>Total de aplicações</strong></div><strong>${apps.length}</strong></div><div class="list-item"><div><strong>Valor registrado</strong></div><strong>${money(apps.reduce((s,a)=>s+Number(a.amount||0),0))}</strong></div>`; el('reportFinance').innerHTML=`<div class="list-item"><div><strong>Recebimentos pagos</strong></div><strong>${paid.length}</strong></div><div class="list-item"><div><strong>Despesas registradas</strong></div><strong>${exp.length}</strong></div>`; }
-
 function setFinanceTab(tab='overview'){
   qsa('.module-tabs [data-finance-tab]').forEach(b=>b.classList.toggle('active',b.dataset.financeTab===tab));
   el('financeOverviewPanel')?.classList.toggle('hidden',tab!=='overview');
@@ -510,6 +510,12 @@ function medicationField(value=''){
   const values=[...new Set([...base,...dynamic].map(x=>String(x).trim()).filter(Boolean))];
   return `<div class="field"><label>Medicação</label><input name="medication" list="medicationOptions" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha..." /><datalist id="medicationOptions">${values.map(v=>`<option value="${escapeHtml(v)}"></option>`).join('')}</datalist></div>`;
 }
+function stockItemField(value=''){
+  const base=['Álcool 70%','Algodão','Gaze','Luva de procedimento','Máscara descartável','Seringa 1 mL','Seringa 3 mL','Seringa 5 mL','Agulha','Curativo','Papel toalha','Soro fisiológico'];
+  const existing=state.stock.map(x=>x.name).filter(Boolean);
+  const values=[...new Set([...base,...existing])];
+  return `<div class="field span2"><label>Item</label><input name="name" list="stockItemOptions" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha um item..." /><datalist id="stockItemOptions">${values.map(v=>`<option value="${escapeHtml(v)}"></option>`).join('')}</datalist><small class="field-help">Você pode escolher uma sugestão ou cadastrar outro item.</small></div>`;
+}
 function stockCategoryOptions(selected=''){
   const values=['Medicamento','Material descartável','Material de limpeza','Material de escritório','Insumo','EPI','Outro'];
   return '<option value="">Selecione</option>'+values.map(v=>`<option value="${v}" ${v===selected?'selected':''}>${v}</option>`).join('');
@@ -585,10 +591,18 @@ function parseMoneyInput(v){
   return Number.isFinite(n)?n:0;
 }
 function normalizeMoneyInput(input){
-  const digits=String(input.value||'').replace(/\D/g,'');
-  if(!digits){input.value='';return;}
-  const cents=Number(digits)/100;
-  input.value=cents.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  let raw=String(input.value||'').replace(/R\$\s?/g,'').replace(/[^0-9,]/g,'');
+  if(!raw){input.value='';return;}
+  const comma=raw.indexOf(',');
+  if(comma>=0){
+    const intPart=(raw.slice(0,comma).replace(/^0+(?=\d)/,'')||'0');
+    const decPart=raw.slice(comma+1).replace(/\D/g,'').slice(0,2);
+    input.value=intPart+','+decPart;
+    return;
+  }
+  const intPart=(raw.replace(/^0+(?=\d)/,'')||'0');
+  input.value=intPart+',00';
+  try{input.setSelectionRange(intPart.length,intPart.length);}catch(_e){}
 }
 function moneyField(name,label,value='',opts=''){
   let display='';
@@ -597,6 +611,11 @@ function moneyField(name,label,value='',opts=''){
     display=Number.isFinite(n)?n.toFixed(2).replace('.',','):'';
   }
   return `<div class="field ${opts}"><label>${label}</label><div class="money-wrap"><span>R$</span><input class="money-input" name="${name}" inputmode="decimal" autocomplete="off" value="${escapeHtml(display)}" placeholder="0,00" /></div></div>`;
+}
+function finishMoneyInput(input){
+  if(!input.value.trim()){input.value='';return;}
+  const n=parseMoneyInput(input.value);
+  input.value=n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 function paymentOptions(selected=''){
   const vals=['PIX','DINHEIRO','CARTÃO DE DÉBITO','CARTÃO DE CRÉDITO','TRANSFERÊNCIA','CONVÊNIO','BOLETO','OUTRO'];
@@ -618,7 +637,7 @@ function formHtml(type,r){
   if(type==='expense') return field('date','Data','date',r.date||todayISO())+field('category','Categoria','text',r.category)+field('description','Descrição','text',r.description,'span2')+moneyField('amount','Valor',r.amount)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='professional') return field('name','Nome do profissional','text',r.name,'span2')+field('specialty','Especialidade','select',specialtyOptions(r.specialty))+field('phone','Telefone / WhatsApp','text',r.phone)+field('email','E-mail','email',r.email)+field('commission_percent','Comissão padrão (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
   if(type==='service') return field('name','Nome do serviço','text',r.name,'span2')+field('specialty','Especialidade','select',specialtyOptions(r.specialty))+field('duration_minutes','Duração (min)','number',r.duration_minutes||30)+moneyField('price','Valor (R$)',r.price)+field('commission_percent','Comissão específica (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
-  if(type==='stock') return field('name','Item','text',r.name,'span2')+field('category','Categoria','select',stockCategoryOptions(r.category))+field('unit','Unidade','select',stockUnitOptions(r.unit||'un'))+field('current_qty','Quantidade atual','number',r.current_qty)+field('minimum_qty','Estoque mínimo','number',r.minimum_qty)+field('lot','Lote','text',r.lot)+field('expiry_date','Validade','date',r.expiry_date)+moneyField('unit_cost','Custo unitário',r.unit_cost);
+  if(type==='stock') return stockItemField(r.name)+field('category','Categoria','select',stockCategoryOptions(r.category))+field('unit','Unidade','select',stockUnitOptions(r.unit||'un'))+field('current_qty','Quantidade atual','number',r.current_qty)+field('minimum_qty','Estoque mínimo','number',r.minimum_qty)+field('lot','Lote','text',r.lot)+field('expiry_date','Validade','date',r.expiry_date)+moneyField('unit_cost','Custo unitário',r.unit_cost);
   if(type==='reminder') return field('title','Título','text',r.title,'span2')+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('priority','Prioridade','select',`<option ${r.priority==='BAIXA'?'selected':''}>BAIXA</option><option ${!r.priority||r.priority==='NORMAL'?'selected':''}>NORMAL</option><option ${r.priority==='ALTA'?'selected':''}>ALTA</option>`)+field('responsible','Responsável','text',r.responsible)+field('status','Status','select',`<option ${!r.status||r.status==='ABERTO'?'selected':''}>ABERTO</option><option ${r.status==='CONCLUÍDO'?'selected':''}>CONCLUÍDO</option>`)+field('description','Descrição','textarea',r.description,'span2');
   if(type==='stockMove') return field('stock_id','Item','select',`<option value="${r.id}" selected>${escapeHtml(r.name)}</option>`,'span2')+field('movement_type','Tipo','select','<option>ENTRADA</option><option>SAÍDA</option>')+field('quantity','Quantidade','number','1')+field('notes','Observações','textarea','','span2');
   return '';
@@ -644,7 +663,28 @@ async function saveModal(e){
     if(type==='stock'){table='stock_items';payload={name:raw.name,category:raw.category,unit:raw.unit,current_qty:Number(raw.current_qty||0),minimum_qty:Number(raw.minimum_qty||0),lot:raw.lot,expiry_date:raw.expiry_date||null,unit_cost:parseMoneyInput(raw.unit_cost),active:true};}
     if(type==='reminder'){table='team_reminders';payload={title:raw.title,date:raw.date,time:raw.time||null,priority:raw.priority,responsible:raw.responsible,status:raw.status,description:raw.description,completed_at:raw.status==='CONCLUÍDO'?(record.completed_at||new Date().toISOString()):null};}
     if(type==='stockMove'){ await saveStockMovement(raw); save.disabled=false; return; }
-    payload.updated_at=new Date().toISOString(); let res=id?await supabase.from(table).update(payload).eq('id',id):await supabase.from(table).insert(payload); if(res.error) throw res.error; await audit(id?'UPDATE':'INSERT',table,id||'',payload); closeModal(); await loadAll(); toast('Registro salvo.');
+    payload.updated_at=new Date().toISOString();
+    let res=id
+      ?await supabase.from(table).update(payload).eq('id',id).select().maybeSingle()
+      :await supabase.from(table).insert(payload).select().maybeSingle();
+    if(res.error) throw res.error;
+    const saved=res.data;
+    if(type==='receivable' && payload.status==='PAGO' && saved) await registerPaidInCash(saved);
+    if(type==='application' && payload.payment_status==='PAGO' && saved){
+      const session=currentCashSession();
+      if(session?.status==='OPEN'){
+        const {error:cashErr}=await supabase.from('cash_movements').insert({
+          session_id:session.id,movement_date:todayISO(),movement_type:'RECEIPT',
+          payment_method:payload.payment_method||'OUTRO',amount:Number(payload.amount||0),
+          description:(payload.patient_name?payload.patient_name+' • ':'')+(payload.medication||'Aplicação'),
+          source_type:'application',source_id:saved.id,user_id:currentUser.id,
+          user_name:currentProfile?.full_name||currentUser.email
+        });
+        if(cashErr && !String(cashErr.message||'').toLowerCase().includes('duplicate')) throw cashErr;
+      }
+    }
+    await audit(id?'UPDATE':'INSERT',table,id||saved?.id||'',payload);
+    closeModal(); await loadAll(); toast('Registro salvo.');
   }catch(err){toast(err.message||'Erro ao salvar.',true);}finally{save.disabled=false;}
 }
 async function saveStockMovement(raw){ const item=state.stock.find(x=>x.id===raw.stock_id); if(!item) throw new Error('Item não encontrado.'); const qty=Number(raw.quantity||0); if(qty<=0) throw new Error('Informe uma quantidade válida.'); const newQty=raw.movement_type==='ENTRADA'?Number(item.current_qty||0)+qty:Number(item.current_qty||0)-qty; if(newQty<0) throw new Error('A saída é maior que o estoque atual.'); const {error:e1}=await supabase.from('stock_items').update({current_qty:newQty,updated_at:new Date().toISOString()}).eq('id',item.id); if(e1) throw e1; const {error:e2}=await supabase.from('stock_movements').insert({item_id:item.id,item_name:item.name,date:todayISO(),movement_type:raw.movement_type,quantity:qty,balance_after:newQty,notes:raw.notes,user_name:currentProfile?.full_name||currentUser.email}); if(e2) throw e2; await audit('STOCK_MOVE','stock_items',item.id,{type:raw.movement_type,quantity:qty,balance_after:newQty}); closeModal(); await loadAll(); toast('Estoque atualizado.'); }
