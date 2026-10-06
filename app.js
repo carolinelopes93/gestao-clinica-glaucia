@@ -14,7 +14,7 @@ let currentProfile = null;
 let currentView = 'dashboard';
 let modalContext = null;
 let dashboardStatusFilter = 'ALL';
-const state = {patients:[],agenda:[],applications:[],receivables:[],expenses:[],stock:[],reminders:[],stockMovements:[],users:[]};
+const state = {patients:[],agenda:[],applications:[],receivables:[],expenses:[],stock:[],reminders:[],stockMovements:[],users:[],professionals:[],services:[]};
 
 const viewMeta = {
   dashboard:['Painel','Acompanhe os atendimentos e pendências de hoje.','+ Novo paciente','patient'],
@@ -24,9 +24,11 @@ const viewMeta = {
   finance:['Financeiro','Resumo de entradas, despesas e saldo.','+ Nova aplicação','application'],
   receivables:['A Receber','Controle de valores pendentes e pagos.','+ Novo a receber','receivable'],
   expenses:['Despesas','Saídas e comprovantes.','+ Nova despesa','expense'],
+  professionals:['Profissionais','Equipe clínica, especialidades e comissões.','+ Novo Profissional','professional'],
+  services:['Serviços','Procedimentos, duração e valores oferecidos pela clínica.','+ Novo Serviço','service'],
   stock:['Estoque','Medicamentos, materiais, lotes e validades.','+ Novo item','stock'],
   reminders:['Lembretes','Tarefas internas, prioridades e pendências.','+ Novo lembrete','reminder'],
-  reports:['Relatórios','Fechamento mensal para impressão/PDF.','Gerar PDF','print'],
+  reports:['Relatórios','Relatórios operacionais e financeiros.','Exportar PDF','print'],
   users:['Usuários','Gerencie os acessos individuais da equipe.','+ Novo usuário','user'],
   help:['Ajuda','Guia rápido para a equipe usar o sistema.','+ Novo agendamento','appointment']
 };
@@ -50,22 +52,39 @@ async function boot(){
 function showOnly(id){ ['setupScreen','loginScreen','app'].forEach(x=>el(x).classList.add('hidden')); el(id).classList.remove('hidden'); }
 function setDefaultMonths(){ ['agendaMonth','appMonth','expenseMonth','reportMonth'].forEach(id=>{ if(el(id)) el(id).value=monthISO(); }); }
 function bindEvents(){
-  el('loginForm').addEventListener('submit',login);
-  el('bootstrapBtn').addEventListener('click',bootstrapFirstUser);
-  el('logoutBtn').addEventListener('click',logout);
-  el('refreshBtn').addEventListener('click',()=>loadAll(true));
-  el('topAction').addEventListener('click',()=>handleAction(viewMeta[currentView][3]));
-  el('printReportBtn').addEventListener('click',()=>window.print());
+  el('loginForm')?.addEventListener('submit',login);
+  el('bootstrapBtn')?.addEventListener('click',bootstrapFirstUser);
+  el('logoutBtn')?.addEventListener('click',logout);
+  el('refreshBtn')?.addEventListener('click',()=>loadAll(true));
+  el('topAction')?.addEventListener('click',()=>handleAction(viewMeta[currentView]?.[3]));
+  el('printReportBtn')?.addEventListener('click',()=>window.print());
   el('newUserBtn')?.addEventListener('click',()=>openUserForm());
   el('quickAppointmentBtn')?.addEventListener('click',()=>openForm('appointment'));
   el('themeButton')?.addEventListener('click',e=>{e.stopPropagation();el('themeMenu')?.classList.toggle('hidden');});
-  el('themeMenu')?.addEventListener('click',e=>{const b=e.target.closest('[data-theme-choice]');if(!b)return;setTheme(b.dataset.themeChoice);el('themeMenu').classList.add('hidden');});
+  el('themeMenu')?.addEventListener('click',e=>{const b=e.target.closest('[data-theme-choice]');if(!b)return;setTheme(b.dataset.themeChoice);el('themeMenu')?.classList.add('hidden');});
   el('globalSearch')?.addEventListener('input',renderGlobalSearch);
   el('globalSearch')?.addEventListener('focus',renderGlobalSearch);
   el('notificationBtn')?.addEventListener('click',e=>{e.stopPropagation();el('notificationPanel')?.classList.toggle('hidden');});
-  el('agendaStatus')?.addEventListener('change',()=>renderAgenda());
+  el('agendaStatus')?.addEventListener('change',renderAgenda);
   el('dashboardStatusTabs')?.addEventListener('click',e=>{const b=e.target.closest('[data-dashboard-filter]');if(!b)return;dashboardStatusFilter=b.dataset.dashboardFilter;qsa('#dashboardStatusTabs button').forEach(x=>x.classList.toggle('active',x===b));renderDashboard();});
-  el('nav').addEventListener('click',e=>{const b=e.target.closest('button[data-view]');if(b)switchView(b.dataset.view)});
+
+  el('nav')?.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-view]');
+    if(b) switchView(b.dataset.view);
+  });
+
+  document.querySelector('.module-tabs')?.addEventListener('click',e=>{
+    const b=e.target.closest('[data-finance-tab]');
+    if(b) setFinanceTab(b.dataset.financeTab);
+  });
+
+  document.querySelector('.report-tabs')?.addEventListener('click',e=>{
+    const b=e.target.closest('[data-report-tab]');
+    if(!b)return;
+    qsa('.report-tabs button').forEach(x=>x.classList.toggle('active',x===b));
+    renderReports(b.dataset.reportTab);
+  });
+
   document.addEventListener('click',e=>{
     const b=e.target.closest('[data-view-go]'); if(b) switchView(b.dataset.viewGo);
     const q=e.target.closest('[data-quick]'); if(q) handleAction(q.dataset.quick);
@@ -76,11 +95,24 @@ function bindEvents(){
     if(!e.target.closest('#globalSearchWrap')) el('globalSearchResults')?.classList.add('hidden');
     if(e.target.closest('[data-close="modal"]')) closeModal();
   });
-  document.addEventListener('input',e=>{if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);});
-  document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('globalSearch')?.focus();}if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');}});
-  el('modalForm').addEventListener('submit',saveModal);
-  [['patientSearch','patients'],['agendaSearch','agenda'],['applicationSearch','applications'],['receivableSearch','receivables'],['expenseSearch','expenses'],['stockSearch','stock'],['reminderSearch','reminders']].forEach(([id,v])=>el(id).addEventListener('input',()=>render(v)));
-  ['agendaMonth','appMonth','expenseMonth','reportMonth','receivableStatus','stockFilter','reminderStatus'].forEach(id=>el(id).addEventListener('change',()=>render(id==='reportMonth'?'reports':currentView)));
+
+  document.addEventListener('input',e=>{
+    if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);
+    if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
+  });
+
+  document.addEventListener('keydown',e=>{
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();el('globalSearch')?.focus();}
+    if(e.key==='Escape'){el('globalSearchResults')?.classList.add('hidden');el('notificationPanel')?.classList.add('hidden');el('themeMenu')?.classList.add('hidden');}
+  });
+
+  el('modalForm')?.addEventListener('submit',saveModal);
+
+  [['patientSearch','patients'],['agendaSearch','agenda'],['applicationSearch','applications'],['receivableSearch','receivables'],['expenseSearch','expenses'],['professionalSearch','professionals'],['serviceSearch','services'],['stockSearch','stock'],['reminderSearch','reminders']]
+    .forEach(([id,v])=>el(id)?.addEventListener('input',()=>render(v)));
+
+  ['agendaMonth','appMonth','expenseMonth','reportMonth','receivableStatus','stockFilter','reminderStatus']
+    .forEach(id=>el(id)?.addEventListener('change',()=>render(id==='reportMonth'?'reports':currentView)));
 }
 
 async function refreshBootstrapState(){
@@ -146,8 +178,8 @@ async function enterApp(user){
 }
 
 async function loadAll(showToast=false){
-  const tables=['patients','appointments','applications','receivables','expenses','stock_items','team_reminders','stock_movements'];
-  const keys=['patients','agenda','applications','receivables','expenses','stock','reminders','stockMovements'];
+  const tables=['patients','appointments','applications','receivables','expenses','stock_items','team_reminders','stock_movements','professionals','services'];
+  const keys=['patients','agenda','applications','receivables','expenses','stock','reminders','stockMovements','professionals','services'];
   const results=await Promise.all(tables.map(t=>supabase.from(t).select('*').order('created_at',{ascending:false})));
   const err=results.find(r=>r.error)?.error; if(err){toast('Erro ao carregar dados: '+err.message,true);return;}
   results.forEach((r,i)=>state[keys[i]]=r.data||[]);
@@ -157,11 +189,25 @@ async function loadAll(showToast=false){
 
 function switchView(v){
   if(v==='users' && currentProfile?.role!=='admin') return toast('Somente administradores podem gerenciar usuários.',true);
-  currentView=v; qsa('.view').forEach(x=>x.classList.remove('active')); el('view-'+v).classList.add('active'); qsa('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
-  const m=viewMeta[v]; el('pageTitle').textContent=m[0]; el('pageSubtitle').textContent=m[1]; el('pageEyebrow').textContent=v==='dashboard'?'VISÃO GERAL':'GESTÃO CLÍNICA'; el('topAction').textContent=m[2]; render(v); refreshIcons();
+  const meta=viewMeta[v], view=el('view-'+v);
+  if(!meta || !view) return toast('Esta tela ainda não está disponível.',true);
+
+  currentView=v;
+  qsa('.view').forEach(x=>x.classList.remove('active'));
+  view.classList.add('active');
+  qsa('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
+
+  el('pageTitle').textContent=meta[0];
+  el('pageSubtitle').textContent=meta[1];
+  el('pageEyebrow').textContent=v==='dashboard'?'VISÃO GERAL':'GESTÃO CLÍNICA';
+  el('topAction').textContent=meta[2];
+  el('topAction').classList.toggle('hidden',v==='reports');
+
+  render(v);
+  refreshIcons();
 }
 function renderAll(){ Object.keys(viewMeta).forEach(render); }
-function render(v){({dashboard:renderDashboard,agenda:renderAgenda,patients:renderPatients,applications:renderApplications,finance:renderFinance,receivables:renderReceivables,expenses:renderExpenses,stock:renderStock,reminders:renderReminders,reports:renderReports,users:renderUsers,help:()=>{}})[v]?.();}
+function render(v){({dashboard:renderDashboard,agenda:renderAgenda,patients:renderPatients,applications:renderApplications,finance:renderFinance,receivables:renderReceivables,expenses:renderExpenses,professionals:renderProfessionals,services:renderServices,stock:renderStock,reminders:renderReminders,reports:renderReports,users:renderUsers,help:()=>{}})[v]?.();}
 
 function renderDashboard(){
   const today=todayISO(), month=monthISO();
@@ -196,6 +242,32 @@ function renderCalendar(month,rows){ const [y,m]=month.split('-').map(Number), f
 function renderApplications(){ const month=el('appMonth').value||monthISO(),q=el('applicationSearch').value.toLowerCase(); const rows=state.applications.filter(a=>String(a.date||'').startsWith(month)&&[a.patient_name,a.medication].join(' ').toLowerCase().includes(q)); el('applicationRows').innerHTML=rows.length?rows.map(a=>`<tr><td>${dateBR(a.date)}</td><td><strong>${escapeHtml(a.patient_name||'')}</strong></td><td>${escapeHtml(a.medication||'')}</td><td>${escapeHtml(a.dose||'')}</td><td>${money(a.amount)}</td><td>${badge(a.payment_status||'PENDENTE')}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('application','${a.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('applications','${a.id}','aplicação')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhuma aplicação no período.</td></tr>'; }
 function renderReceivables(){ const q=el('receivableSearch').value.toLowerCase(),st=el('receivableStatus').value; const rows=state.receivables.filter(r=>(!st||r.status===st)&&[r.patient_name,r.description].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(a.due_date||'').localeCompare(String(b.due_date||''))); el('receivableRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${dateBR(r.due_date)}</td><td><strong>${escapeHtml(r.patient_name||'')}</strong></td><td>${escapeHtml(r.description||'')}</td><td>${money(r.amount)}</td><td>${badge(r.status)}</td><td>${escapeHtml(r.payment_method||'')}</td><td class="row-actions">${r.status!=='PAGO'?`<button class="mini-btn" onclick="window.markPaid('${r.id}')">Marcar pago</button>`:''}<button class="mini-btn" onclick="window.appEdit('receivable','${r.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('receivables','${r.id}','recebimento')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum valor encontrado.</td></tr>'; }
 function renderExpenses(){ const month=el('expenseMonth').value||monthISO(),q=el('expenseSearch').value.toLowerCase(); const rows=state.expenses.filter(r=>String(r.date||'').startsWith(month)&&[r.category,r.description].join(' ').toLowerCase().includes(q)); el('expenseRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${dateBR(r.date)}</td><td>${escapeHtml(r.category||'')}</td><td><strong>${escapeHtml(r.description||'')}</strong></td><td>${money(r.amount)}</td><td>${escapeHtml(r.payment_method||'')}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('expense','${r.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('expenses','${r.id}','despesa')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhuma despesa no período.</td></tr>'; }
+function renderProfessionals(){
+  const q=(el('professionalSearch')?.value||'').toLowerCase();
+  const rows=state.professionals.filter(p=>[p.name,p.specialty,p.phone,p.email].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  el('professionalRows').innerHTML=rows.length?rows.map(p=>`<tr>
+    <td><strong>${escapeHtml(p.name||'')}</strong><small>${escapeHtml(p.email||'')}</small></td>
+    <td>${escapeHtml(p.specialty||'')}</td>
+    <td>${escapeHtml(p.phone||'')}</td>
+    <td>${Number(p.commission_percent||0).toLocaleString('pt-BR')}%</td>
+    <td>${badge(p.active===false?'INATIVO':'ATIVO')}</td>
+    <td class="row-actions"><button class="mini-btn" onclick="window.appEdit('professional','${p.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('professionals','${p.id}','profissional')">Excluir</button></td>
+  </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum profissional cadastrado.</td></tr>';
+}
+
+function renderServices(){
+  const q=(el('serviceSearch')?.value||'').toLowerCase();
+  const rows=state.services.filter(s=>[s.name,s.specialty].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  el('serviceRows').innerHTML=rows.length?rows.map(s=>`<tr>
+    <td><strong>${escapeHtml(s.name||'')}</strong></td>
+    <td>${escapeHtml(s.specialty||'')}</td>
+    <td>${Number(s.duration_minutes||0)} min</td>
+    <td>${money(s.price)}</td>
+    <td>${badge(s.active===false?'INATIVO':'ATIVO')}</td>
+    <td class="row-actions"><button class="mini-btn" onclick="window.appEdit('service','${s.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('services','${s.id}','serviço')">Excluir</button></td>
+  </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum serviço cadastrado.</td></tr>';
+}
+
 function renderStock(){ const q=el('stockSearch').value.toLowerCase(),f=el('stockFilter').value, now=new Date(), in60=new Date(Date.now()+60*864e5); const rows=state.stock.filter(s=>[s.name,s.category,s.lot].join(' ').toLowerCase().includes(q)).filter(s=>f!=='low'||Number(s.current_qty)<=Number(s.minimum_qty||0)).filter(s=>f!=='expiring'||(s.expiry_date&&new Date(s.expiry_date)<=in60)); el('stockRows').innerHTML=rows.length?rows.map(s=>`<tr><td><strong>${escapeHtml(s.name)}</strong></td><td>${escapeHtml(s.category||'')}</td><td>${Number(s.current_qty||0)} ${escapeHtml(s.unit||'')}</td><td>${Number(s.minimum_qty||0)}</td><td>${escapeHtml(s.lot||'')}</td><td>${s.expiry_date?dateBR(s.expiry_date):''}</td><td class="row-actions"><button class="mini-btn" onclick="window.stockMove('${s.id}')">Movimentar</button><button class="mini-btn" onclick="window.appEdit('stock','${s.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('stock_items','${s.id}','item')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum item encontrado.</td></tr>'; }
 function renderReminders(){ const q=el('reminderSearch').value.toLowerCase(),st=el('reminderStatus').value; const rows=state.reminders.filter(r=>(!st||r.status===st)&&[r.title,r.description,r.responsible].join(' ').toLowerCase().includes(q)); el('reminderCards').innerHTML=rows.length?rows.map(r=>`<article class="reminder-card ${r.status!=='CONCLUÍDO'&&r.date&&r.date<todayISO()?'overdue':''}">${badge(r.priority||'NORMAL')}<h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.description||'')}</p><div class="reminder-foot"><span>${dateBR(r.date)} ${escapeHtml(r.time||'')}</span><span>${escapeHtml(r.responsible||'')}</span></div><div class="row-actions">${r.status!=='CONCLUÍDO'?`<button class="mini-btn" onclick="window.completeReminder('${r.id}')">Concluir</button>`:''}<button class="mini-btn" onclick="window.appEdit('reminder','${r.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('team_reminders','${r.id}','lembrete')">Excluir</button></div></article>`).join(''):'<div class="empty">Nenhum lembrete encontrado.</div>'; }
 function renderFinance(){ const month=monthISO(), paid=state.receivables.filter(r=>r.status==='PAGO'&&String(r.paid_at||r.due_date||'').slice(0,7)===month), exp=state.expenses.filter(r=>String(r.date||'').slice(0,7)===month), pending=state.receivables.filter(r=>r.status!=='PAGO'); const income=paid.reduce((s,r)=>s+Number(r.amount||0),0), expenses=exp.reduce((s,r)=>s+Number(r.amount||0),0); el('fIncome').textContent=money(income);el('fExpenses').textContent=money(expenses);el('fBalance').textContent=money(income-expenses);el('fPending').textContent=money(pending.reduce((s,r)=>s+Number(r.amount||0),0)); el('financeIncomeList').innerHTML=paid.slice(0,6).map(r=>`<div class="list-item"><div><strong>${escapeHtml(r.patient_name||r.description||'Recebimento')}</strong><small>${dateBR(r.paid_at||r.due_date)}</small></div><strong>${money(r.amount)}</strong></div>`).join('')||'<div class="empty">Sem recebimentos no mês.</div>'; el('financeExpenseList').innerHTML=exp.slice(0,6).map(r=>`<div class="list-item"><div><strong>${escapeHtml(r.description||r.category||'Despesa')}</strong><small>${dateBR(r.date)}</small></div><strong>${money(r.amount)}</strong></div>`).join('')||'<div class="empty">Sem despesas no mês.</div>'; }
@@ -294,21 +366,44 @@ function choosePatient(id,name){
   if(!wrap)return;
   wrap.querySelector('.patient-id-input').value=id; wrap.querySelector('.patient-search-input').value=name; open.classList.add('hidden');
 }
+function parseMoneyInput(v){
+  const s=String(v??'').trim().replace(/R\$\s?/g,'').replace(/\./g,'').replace(',','.');
+  const n=Number(s);
+  return Number.isFinite(n)?n:0;
+}
+function normalizeMoneyInput(input){
+  const raw=input.value.replace(/[^0-9,]/g,'');
+  input.value=raw;
+}
+function moneyField(name,label,value='',opts=''){
+  let display='';
+  if(value!=='' && value!==null && value!==undefined){
+    const n=Number(value);
+    display=Number.isFinite(n)?n.toFixed(2).replace('.',','):'';
+  }
+  return `<div class="field ${opts}"><label>${label}</label><div class="money-wrap"><span>R$</span><input class="money-input" name="${name}" inputmode="decimal" autocomplete="off" value="${escapeHtml(display)}" placeholder="0,00" /></div></div>`;
+}
+function paymentOptions(selected=''){
+  const vals=['PIX','DINHEIRO','CARTÃO DE DÉBITO','CARTÃO DE CRÉDITO','TRANSFERÊNCIA','CONVÊNIO','BOLETO','OUTRO'];
+  return '<option value="">Selecione</option>'+vals.map(v=>`<option value="${v}" ${v===selected?'selected':''}>${v}</option>`).join('');
+}
 function field(name,label,type='text',value='',opts=''){ if(type==='textarea')return `<div class="field ${opts}"><label>${label}</label><textarea name="${name}">${escapeHtml(value)}</textarea></div>`; if(type==='select')return `<div class="field ${opts}"><label>${label}</label><select name="${name}">${value}</select></div>`; return `<div class="field ${opts}"><label>${label}</label><input name="${name}" type="${type}" value="${escapeHtml(value)}" /></div>`; }
 
 function handleAction(type){ if(type==='print'){window.print();return;} if(type==='user'){openUserForm();return;} openForm(type); }
 function openForm(type,id=null){
-  const map={patient:['Paciente','patient'],appointment:['Agendamento','appointment'],application:['Aplicação','application'],receivable:['Valor a receber','receivable'],expense:['Despesa','expense'],stock:['Item de estoque','stock'],reminder:['Lembrete','reminder'],stockMove:['Movimentação de estoque','stockMove']};
+  const map={patient:['Paciente','patient'],appointment:['Agendamento','appointment'],application:['Aplicação','application'],receivable:['Valor a receber','receivable'],expense:['Despesa','expense'],professional:['Profissional','professional'],service:['Serviço','service'],stock:['Item de estoque','stock'],reminder:['Lembrete','reminder'],stockMove:['Movimentação de estoque','stockMove']};
   const [title]=map[type]||['Registro']; const record=id?getRecord(type,id):{}; modalContext={type,id,record}; el('modalTitle').textContent=(id?'Editar ':'Novo ')+title.toLowerCase(); el('modalBody').innerHTML=formHtml(type,record); el('modal').classList.remove('hidden'); el('modal').setAttribute('aria-hidden','false');
 }
-function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
+function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
 function formHtml(type,r){
   if(type==='patient') return field('name','Nome','text',r.name,'span2')+field('phone','Telefone','text',r.phone)+field('birth_date','Data de nascimento','date',r.birth_date)+field('cpf','CPF','text',r.cpf)+field('email','E-mail','email',r.email)+field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)+field('billing_day','Dia de vencimento','number',r.billing_day)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='appointment') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('type','Tipo','text',r.type||'Consulta')+field('professional','Profissional','text',r.professional)+field('status','Status','select',`<option ${r.status==='AGENDADO'?'selected':''}>AGENDADO</option><option ${r.status==='CONFIRMADO'?'selected':''}>CONFIRMADO</option><option ${r.status==='ATENDIDO'?'selected':''}>ATENDIDO</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)+field('notes','Observações','textarea',r.notes,'span2');
-  if(type==='application') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('medication','Medicação','text',r.medication)+field('dose','Dose','text',r.dose)+field('amount','Valor','number',r.amount)+field('billing','Cobrança','select',`<option ${r.billing==='AVULSA'?'selected':''}>AVULSA</option><option ${r.billing==='MENSAL'?'selected':''}>MENSAL</option>`)+field('payment_status','Status do pagamento','select',`<option ${r.payment_status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.payment_status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','text',r.payment_method)+field('due_date','Vencimento','date',r.due_date)+field('notes','Observações','textarea',r.notes,'span2');
+  if(type==='application') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('medication','Medicação','text',r.medication)+field('dose','Dose','text',r.dose)+moneyField('amount','Valor',r.amount)+field('billing','Cobrança','select',`<option ${r.billing==='AVULSA'?'selected':''}>AVULSA</option><option ${r.billing==='MENSAL'?'selected':''}>MENSAL</option>`)+field('payment_status','Status do pagamento','select',`<option ${r.payment_status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.payment_status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('due_date','Vencimento','date',r.due_date)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='receivable') return patientSearchField(r.patient_id)+field('description','Descrição','text',r.description,'span2')+field('due_date','Vencimento','date',r.due_date||todayISO())+field('amount','Valor','number',r.amount)+field('status','Status','select',`<option ${r.status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','text',r.payment_method)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='expense') return field('date','Data','date',r.date||todayISO())+field('category','Categoria','text',r.category)+field('description','Descrição','text',r.description,'span2')+field('amount','Valor','number',r.amount)+field('payment_method','Forma de pagamento','text',r.payment_method)+field('notes','Observações','textarea',r.notes,'span2');
-  if(type==='stock') return field('name','Item','text',r.name,'span2')+field('category','Categoria','text',r.category)+field('unit','Unidade','text',r.unit||'un')+field('current_qty','Quantidade atual','number',r.current_qty)+field('minimum_qty','Estoque mínimo','number',r.minimum_qty)+field('lot','Lote','text',r.lot)+field('expiry_date','Validade','date',r.expiry_date)+field('unit_cost','Custo unitário','number',r.unit_cost);
+  if(type==='professional') return field('name','Nome do profissional','text',r.name,'span2')+field('specialty','Especialidade','text',r.specialty)+field('phone','Telefone / WhatsApp','text',r.phone)+field('email','E-mail','email',r.email)+field('commission_percent','Comissão padrão (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
+  if(type==='service') return field('name','Nome do serviço','text',r.name,'span2')+field('specialty','Especialidade','text',r.specialty)+field('duration_minutes','Duração (min)','number',r.duration_minutes||30)+moneyField('price','Valor (R$)',r.price)+field('commission_percent','Comissão específica (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
+  if(type==='stock') return field('name','Item','text',r.name,'span2')+field('category','Categoria','text',r.category)+field('unit','Unidade','text',r.unit||'un')+field('current_qty','Quantidade atual','number',r.current_qty)+field('minimum_qty','Estoque mínimo','number',r.minimum_qty)+field('lot','Lote','text',r.lot)+field('expiry_date','Validade','date',r.expiry_date)+moneyField('unit_cost','Custo unitário',r.unit_cost);
   if(type==='reminder') return field('title','Título','text',r.title,'span2')+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('priority','Prioridade','select',`<option ${r.priority==='BAIXA'?'selected':''}>BAIXA</option><option ${!r.priority||r.priority==='NORMAL'?'selected':''}>NORMAL</option><option ${r.priority==='ALTA'?'selected':''}>ALTA</option>`)+field('responsible','Responsável','text',r.responsible)+field('status','Status','select',`<option ${!r.status||r.status==='ABERTO'?'selected':''}>ABERTO</option><option ${r.status==='CONCLUÍDO'?'selected':''}>CONCLUÍDO</option>`)+field('description','Descrição','textarea',r.description,'span2');
   if(type==='stockMove') return field('stock_id','Item','select',`<option value="${r.id}" selected>${escapeHtml(r.name)}</option>`,'span2')+field('movement_type','Tipo','select','<option>ENTRADA</option><option>SAÍDA</option>')+field('quantity','Quantidade','number','1')+field('notes','Observações','textarea','','span2');
   return '';
@@ -326,10 +421,12 @@ async function saveModal(e){
     let table,payload;
     if(type==='patient'){table='patients';payload={name:raw.name,phone:raw.phone,birth_date:raw.birth_date||null,cpf:raw.cpf,email:raw.email,billing_type:raw.billing_type,billing_day:raw.billing_day?Number(raw.billing_day):null,notes:raw.notes,active:true};}
     if(type==='appointment'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='appointments';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,time:raw.time,type:raw.type,professional:raw.professional,status:raw.status,notes:raw.notes};}
-    if(type==='application'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='applications';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,medication:raw.medication,dose:raw.dose,amount:Number(raw.amount||0),billing:raw.billing,payment_status:raw.payment_status,payment_method:raw.payment_method,due_date:raw.due_date||null,notes:raw.notes};}
-    if(type==='receivable'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='receivables';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',description:raw.description,due_date:raw.due_date,amount:Number(raw.amount||0),status:raw.status,payment_method:raw.payment_method,notes:raw.notes,paid_at:raw.status==='PAGO'?(record.paid_at||todayISO()):null};}
-    if(type==='expense'){table='expenses';payload={date:raw.date,category:raw.category,description:raw.description,amount:Number(raw.amount||0),payment_method:raw.payment_method,notes:raw.notes};}
-    if(type==='stock'){table='stock_items';payload={name:raw.name,category:raw.category,unit:raw.unit,current_qty:Number(raw.current_qty||0),minimum_qty:Number(raw.minimum_qty||0),lot:raw.lot,expiry_date:raw.expiry_date||null,unit_cost:Number(raw.unit_cost||0),active:true};}
+    if(type==='application'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='applications';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',date:raw.date,medication:raw.medication,dose:raw.dose,amount:parseMoneyInput(raw.amount),billing:raw.billing,payment_status:raw.payment_status,payment_method:raw.payment_method,due_date:raw.due_date||null,notes:raw.notes};}
+    if(type==='receivable'){if(!raw.patient_id) throw new Error('Selecione um paciente pela busca.');table='receivables';const p=state.patients.find(x=>x.id===raw.patient_id);payload={patient_id:raw.patient_id,patient_name:p?.name||'',description:raw.description,due_date:raw.due_date,amount:parseMoneyInput(raw.amount),status:raw.status,payment_method:raw.payment_method,notes:raw.notes,paid_at:raw.status==='PAGO'?(record.paid_at||todayISO()):null};}
+    if(type==='expense'){table='expenses';payload={date:raw.date,category:raw.category,description:raw.description,amount:parseMoneyInput(raw.amount),payment_method:raw.payment_method,notes:raw.notes};}
+    if(type==='professional'){table='professionals';payload={name:raw.name,specialty:raw.specialty,phone:raw.phone,email:raw.email,commission_percent:Number(raw.commission_percent||0),active:raw.active!=='false'};}
+    if(type==='service'){table='services';payload={name:raw.name,specialty:raw.specialty,duration_minutes:Number(raw.duration_minutes||30),price:parseMoneyInput(raw.price),commission_percent:raw.commission_percent?Number(raw.commission_percent):null,active:raw.active!=='false'};}
+    if(type==='stock'){table='stock_items';payload={name:raw.name,category:raw.category,unit:raw.unit,current_qty:Number(raw.current_qty||0),minimum_qty:Number(raw.minimum_qty||0),lot:raw.lot,expiry_date:raw.expiry_date||null,unit_cost:parseMoneyInput(raw.unit_cost),active:true};}
     if(type==='reminder'){table='team_reminders';payload={title:raw.title,date:raw.date,time:raw.time||null,priority:raw.priority,responsible:raw.responsible,status:raw.status,description:raw.description,completed_at:raw.status==='CONCLUÍDO'?(record.completed_at||new Date().toISOString()):null};}
     if(type==='stockMove'){ await saveStockMovement(raw); save.disabled=false; return; }
     payload.updated_at=new Date().toISOString(); let res=id?await supabase.from(table).update(payload).eq('id',id):await supabase.from(table).insert(payload); if(res.error) throw res.error; await audit(id?'UPDATE':'INSERT',table,id||'',payload); closeModal(); await loadAll(); toast('Registro salvo.');
