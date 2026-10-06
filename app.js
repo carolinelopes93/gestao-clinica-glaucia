@@ -451,6 +451,58 @@ function renderPatients(){
     <td class="row-actions"><button class="mini-btn" onclick="window.appEdit('patient','${p.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button></td>
   </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>';
 }
+function renderAgenda(){
+  const month=el('agendaMonth')?.value||monthISO();
+  const status=el('agendaStatus')?.value||'';
+  const q=(el('agendaSearch')?.value||'').toLowerCase();
+
+  let rows=state.agenda.filter(a=>String(a.date||'').startsWith(month));
+
+  if(status){
+    const wanted=String(status).toUpperCase();
+    rows=rows.filter(a=>{
+      const current=String(a.status||'').toUpperCase();
+      if(wanted==='ATENDIDO') return ['ATENDIDO','FINALIZADO','CONCLUÍDO'].includes(current);
+      return current===wanted;
+    });
+  }
+
+  if(q){
+    rows=rows.filter(a=>[
+      a.patient_name,
+      a.type,
+      a.professional,
+      a.status
+    ].join(' ').toLowerCase().includes(q));
+  }
+
+  rows.sort((a,b)=>{
+    const da=String(a.date||'')+' '+String(a.time||'');
+    const db=String(b.date||'')+' '+String(b.time||'');
+    return da.localeCompare(db);
+  });
+
+  renderCalendar(month,rows);
+
+  const body=el('agendaRows');
+  if(!body) return;
+
+  body.innerHTML=rows.length?rows.map(a=>`<tr>
+    <td>${dateBR(a.date)}</td>
+    <td class="time-cell">${escapeHtml(a.time||'')}</td>
+    <td><strong>${escapeHtml(a.patient_name||'')}</strong></td>
+    <td>${escapeHtml(a.type||'Atendimento')}</td>
+    <td>${escapeHtml(a.professional||'')}</td>
+    <td>${badge(a.status||'AGENDADO')}</td>
+    <td class="row-actions align-right">
+      <button class="mini-btn" type="button" onclick="window.appEdit('appointment','${a.id}')">Editar</button>
+      <button class="mini-btn danger" type="button" onclick="window.appDelete('appointments','${a.id}','agendamento')">Excluir</button>
+    </td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum agendamento encontrado neste período.</td></tr>';
+
+  refreshIcons();
+}
+
 function renderCalendar(month,rows){ const [y,m]=month.split('-').map(Number), first=new Date(y,m-1,1), start=new Date(y,m-1,1-first.getDay()), cells=[]; for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const iso=d.toISOString().slice(0,10);const dayRows=rows.filter(a=>a.date===iso).slice(0,3);cells.push(`<div class="cal-day ${d.getMonth()!==m-1?'other':''} ${iso===todayISO()?'today':''}"><div class="cal-num">${d.getDate()}</div>${dayRows.map(a=>`<span class="cal-chip">${escapeHtml(a.time||'')} ${escapeHtml(a.patient_name||'')}</span>`).join('')}</div>`)} el('agendaCalendar').innerHTML=`<div class="cal-head">${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(x=>`<div>${x}</div>`).join('')}</div><div class="cal-grid">${cells.join('')}</div>`; }
 function renderApplications(){ const month=el('appMonth').value||monthISO(),q=el('applicationSearch').value.toLowerCase(); const rows=state.applications.filter(a=>String(a.date||'').startsWith(month)&&[a.patient_name,a.medication].join(' ').toLowerCase().includes(q)); el('applicationRows').innerHTML=rows.length?rows.map(a=>`<tr><td>${dateBR(a.date)}</td><td><strong>${escapeHtml(a.patient_name||'')}</strong></td><td>${escapeHtml(a.medication||'')}</td><td>${escapeHtml(a.dose||'')}</td><td>${money(a.amount)}</td><td>${badge(a.payment_status||'PENDENTE')}</td><td class="row-actions"><button class="mini-btn" onclick="window.appEdit('application','${a.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('applications','${a.id}','aplicação')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhuma aplicação no período.</td></tr>'; }
 function renderReceivables(){ const q=el('receivableSearch').value.toLowerCase(),st=el('receivableStatus').value; const rows=state.receivables.filter(r=>(!st||r.status===st)&&[r.patient_name,r.description].join(' ').toLowerCase().includes(q)).sort((a,b)=>String(a.due_date||'').localeCompare(String(b.due_date||''))); el('receivableRows').innerHTML=rows.length?rows.map(r=>`<tr><td>${dateBR(r.due_date)}</td><td><strong>${escapeHtml(r.patient_name||'')}</strong></td><td>${escapeHtml(r.description||'')}</td><td>${money(r.amount)}</td><td>${badge(r.status)}</td><td>${escapeHtml(r.payment_method||'')}</td><td class="row-actions">${r.status!=='PAGO'?`<button class="mini-btn" onclick="window.markPaid('${r.id}')">Marcar pago</button>`:''}<button class="mini-btn" onclick="window.appEdit('receivable','${r.id}')">Editar</button><button class="mini-btn danger" onclick="window.appDelete('receivables','${r.id}','recebimento')">Excluir</button></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum valor encontrado.</td></tr>'; }
