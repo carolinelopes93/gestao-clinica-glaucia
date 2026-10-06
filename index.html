@@ -105,10 +105,10 @@
       </nav>
 
       <div class="sidebar-bottom">
-        <div class="user-mini">
+        <button id="sidebarProfileBtn" class="user-mini user-mini-button" type="button" title="Meu perfil">
           <div id="userAvatar" class="avatar">G</div>
           <div class="user-mini-copy"><strong id="userName">Usuário</strong><small id="userRole">Equipe</small></div>
-        </div>
+        </button>
         <button id="logoutBtn" class="logout"><i data-lucide="log-out"></i><span>Sair</span></button>
       </div>
     </aside>
@@ -157,10 +157,10 @@
             </div>
           </div>
 
-          <div class="profile-chip">
+          <button id="profilePhotoBtn" class="profile-chip profile-chip-button" type="button" title="Meu perfil">
             <div id="topUserAvatar" class="avatar small">G</div>
             <div><strong id="topUserName">Usuário</strong><small id="topUserRole">Equipe</small></div>
-          </div>
+          </button>
         </div>
       </header>
 
@@ -444,6 +444,32 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="profileModal" class="modal hidden" aria-hidden="true">
+    <div class="backdrop" data-close-profile></div>
+    <div class="modal-card profile-modal-card">
+      <div class="modal-head">
+        <div><span class="eyebrow">MEU PERFIL</span><h2>Foto do perfil</h2></div>
+        <button class="x" type="button" data-close-profile>×</button>
+      </div>
+      <div class="profile-photo-body">
+        <div id="profilePhotoPreview" class="profile-photo-preview">G</div>
+        <div class="profile-photo-copy">
+          <strong>Escolha uma foto sua</strong>
+          <p>A imagem será cortada em formato quadrado e usada no topo e no menu lateral.</p>
+          <input id="profilePhotoInput" type="file" accept="image/png,image/jpeg,image/webp" hidden />
+          <div class="profile-photo-actions">
+            <button id="chooseProfilePhotoBtn" class="btn secondary" type="button"><i data-lucide="image-plus"></i>Escolher foto</button>
+            <button id="removeProfilePhotoBtn" class="btn ghost" type="button"><i data-lucide="trash-2"></i>Remover foto</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn ghost" type="button" data-close-profile>Cancelar</button>
+        <button id="saveProfilePhotoBtn" class="btn primary" type="button">Salvar foto</button>
+      </div>
+    </div>
   </div>
 
   <div id="modal" class="modal hidden" aria-hidden="true">
