@@ -1045,3 +1045,24 @@ html[data-theme="rose"] .custom-options button:focus{
 .stock-item-combobox .custom-combobox-trigger{
   display:none!important;
 }
+
+/* Contato rápido por WhatsApp nos pacientes */
+.patient-phone-cell{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:190px;
+}
+.patient-phone-cell>span{
+  color:var(--text);
+}
+.whatsapp-btn{
+  border-color:#BBF7D0!important;
+  background:#F0FDF4!important;
+  color:#166534!important;
+  font-weight:600!important;
+}
+.whatsapp-btn:hover{
+  background:#DCFCE7!important;
+  border-color:#86EFAC!important;
+}
