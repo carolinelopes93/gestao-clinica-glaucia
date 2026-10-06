@@ -96,6 +96,10 @@
           <span class="nav-label">Relatórios</span>
           <button data-view="reports"><i data-lucide="file-chart-column"></i><span class="nav-text">Relatórios</span></button>
         </div>
+        <div class="nav-group">
+          <span class="nav-label">Suporte</span>
+          <button data-view="help"><i data-lucide="circle-help"></i><span class="nav-text">Ajuda</span></button>
+        </div>
       </nav>
 
       <div class="sidebar-bottom">
@@ -244,6 +248,76 @@
             <button id="newUserBtn" class="btn primary">+ Novo usuário</button>
           </div>
           <div class="tablewrap"><table class="data-table"><thead><tr><th>Nome</th><th>E-mail</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th></th></tr></thead><tbody id="userRows"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="view-help" class="view">
+        <div class="help-hero">
+          <div>
+            <span class="eyebrow">CENTRAL DE AJUDA</span>
+            <h2>Como usar o sistema</h2>
+            <p>Um guia rápido para a equipe aprender as principais rotinas sem depender de treinamento técnico.</p>
+          </div>
+          <div class="help-hero-icon"><i data-lucide="book-open-check"></i></div>
+        </div>
+
+        <div class="help-grid">
+          <details class="help-card" open>
+            <summary><span class="help-icon"><i data-lucide="rocket"></i></span><div><strong>Primeiros passos</strong><small>O básico para começar</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <ol>
+                <li>Entre com seu e-mail e senha individual.</li>
+                <li>Confira o <strong>Painel</strong> para ver agenda, pendências e valores do dia.</li>
+                <li>Use o botão <strong>Novo agendamento</strong> no topo para marcar um atendimento rapidamente.</li>
+                <li>Use a busca no topo para localizar pacientes e registros sem navegar por várias telas.</li>
+              </ol>
+            </div>
+          </details>
+
+          <details class="help-card">
+            <summary><span class="help-icon"><i data-lucide="calendar-days"></i></span><div><strong>Agenda</strong><small>Marcar, editar e acompanhar atendimentos</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <p>Para criar um atendimento, clique em <strong>Novo agendamento</strong>. No campo Paciente, comece a digitar o nome, telefone ou CPF e selecione a pessoa que aparecer na lista.</p>
+              <p>Use os filtros de status para visualizar rapidamente aguardando, confirmados, concluídos ou cancelados.</p>
+            </div>
+          </details>
+
+          <details class="help-card">
+            <summary><span class="help-icon"><i data-lucide="users"></i></span><div><strong>Pacientes</strong><small>Cadastro e pesquisa</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <p>Cadastre nome, telefone, CPF, e-mail e informações de cobrança. Depois, pesquise digitando qualquer parte do nome, telefone ou CPF.</p>
+              <p>Ao criar aplicações, recebimentos ou agendamentos, você não precisa percorrer uma lista enorme: basta começar a digitar o nome do paciente.</p>
+            </div>
+          </details>
+
+          <details class="help-card">
+            <summary><span class="help-icon"><i data-lucide="wallet-cards"></i></span><div><strong>Financeiro</strong><small>Recebimentos e despesas</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <p>Em <strong>A receber</strong>, registre valores pendentes e marque como pago quando receber. Em <strong>Despesas</strong>, registre as saídas da clínica.</p>
+              <p>A tela Financeiro calcula automaticamente entradas, despesas, saldo e valores pendentes.</p>
+            </div>
+          </details>
+
+          <details class="help-card">
+            <summary><span class="help-icon"><i data-lucide="boxes"></i></span><div><strong>Estoque</strong><small>Entradas, saídas e alertas</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <p>Cadastre cada item com quantidade, estoque mínimo, lote e validade. Use <strong>Movimentar</strong> para registrar entrada ou saída.</p>
+              <p>Os filtros ajudam a localizar itens com estoque baixo ou validade próxima.</p>
+            </div>
+          </details>
+
+          <details class="help-card">
+            <summary><span class="help-icon"><i data-lucide="user-cog"></i></span><div><strong>Usuários e acessos</strong><small>Somente administradores</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
+            <div class="help-content">
+              <p>Administradores podem criar logins individuais para cada pessoa da equipe, bloquear acessos e redefinir senhas.</p>
+              <p>Nunca compartilhe uma única senha entre toda a equipe; cada pessoa deve usar seu próprio acesso.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="help-tip">
+          <i data-lucide="lightbulb"></i>
+          <div><strong>Dica</strong><p>Se alguma tela ficar diferente depois de uma atualização, pressione <kbd>Ctrl + F5</kbd> para carregar a versão mais recente.</p></div>
         </div>
       </section>
 
