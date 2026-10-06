@@ -58,7 +58,8 @@ function bindEvents(){
   el('printReportBtn').addEventListener('click',()=>window.print());
   el('newUserBtn')?.addEventListener('click',()=>openUserForm());
   el('quickAppointmentBtn')?.addEventListener('click',()=>openForm('appointment'));
-  el('themeSelect')?.addEventListener('change',e=>setTheme(e.target.value));
+  el('themeButton')?.addEventListener('click',e=>{e.stopPropagation();el('themeMenu')?.classList.toggle('hidden');});
+  el('themeMenu')?.addEventListener('click',e=>{const b=e.target.closest('[data-theme-choice]');if(!b)return;setTheme(b.dataset.themeChoice);el('themeMenu').classList.add('hidden');});
   el('globalSearch')?.addEventListener('input',renderGlobalSearch);
   el('globalSearch')?.addEventListener('focus',renderGlobalSearch);
   el('notificationBtn')?.addEventListener('click',e=>{e.stopPropagation();el('notificationPanel')?.classList.toggle('hidden');});
@@ -71,6 +72,7 @@ function bindEvents(){
     const pr=e.target.closest('[data-patient-result]'); if(pr) choosePatient(pr.dataset.patientResult,pr.dataset.patientName||'');
     if(!e.target.closest('.patient-combobox')) qsa('.patient-results').forEach(x=>x.classList.add('hidden'));
     if(!e.target.closest('.notification-wrap')) el('notificationPanel')?.classList.add('hidden');
+    if(!e.target.closest('.theme-picker-wrap')) el('themeMenu')?.classList.add('hidden');
     if(!e.target.closest('#globalSearchWrap')) el('globalSearchResults')?.classList.add('hidden');
     if(e.target.closest('[data-close="modal"]')) closeModal();
   });
@@ -202,9 +204,10 @@ function renderReports(){ const month=el('reportMonth').value||monthISO(), paid=
 function refreshIcons(){try{window.lucide?.createIcons({attrs:{'stroke-width':1.8}});}catch(_e){}}
 function setTheme(theme,persist=true){
   const allowed=['rose','blue','light','dark'], next=allowed.includes(theme)?theme:'rose';
-  document.documentElement.dataset.theme=next; if(el('themeSelect'))el('themeSelect').value=next;
+  document.documentElement.dataset.theme=next;
+  qsa('[data-theme-choice]').forEach(b=>b.classList.toggle('active',b.dataset.themeChoice===next));
   if(persist)localStorage.setItem('clinicTheme',next);
-  const colors={rose:'#9f5667',blue:'#2457a6',light:'#475569',dark:'#0f172a'};
+  const colors={rose:'#FF9EA3',blue:'#2457a6',light:'#475569',dark:'#0f172a'};
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',colors[next]);
 }
 function renderNotifications(){
