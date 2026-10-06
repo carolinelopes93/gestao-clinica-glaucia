@@ -576,10 +576,7 @@ function dosageUnitOptions(selected=''){
   return '<option value="">Selecione</option>'+values.map(v=>`<option value="${v}" ${v===selected?'selected':''}>${v}</option>`).join('');
 }
 function medicationField(value=''){
-  const dynamic=state.stock.map(x=>x.name).filter(Boolean);
-  const base=['Dipirona','Paracetamol','Ibuprofeno','Diclofenaco','Dexametasona','Vitamina B12','Vitamina D','Outro'];
-  const values=[...new Set([...base,...dynamic].map(x=>String(x).trim()).filter(Boolean))];
-  return `<div class="field"><label>Medicação</label><input name="medication" list="medicationOptions" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite ou escolha..." /><datalist id="medicationOptions">${values.map(v=>`<option value="${escapeHtml(v)}"></option>`).join('')}</datalist></div>`;
+  return `<div class="field"><label>Medicação</label><input name="medication" type="text" autocomplete="off" value="${escapeHtml(value||'')}" placeholder="Digite a medicação..." /></div>`;
 }
 function stockItemField(value=''){
   const base=['Álcool 70%','Algodão','Gaze','Luva de procedimento','Máscara descartável','Seringa 1 mL','Seringa 3 mL','Seringa 5 mL','Agulha','Curativo','Papel toalha','Soro fisiológico'];
