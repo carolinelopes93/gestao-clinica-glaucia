@@ -425,8 +425,18 @@
               <button data-report-tab="patients">Pacientes</button>
             </div>
             <div class="report-actions">
-              <select id="reportPeriodPreset"><option value="month">Este mês</option><option value="today">Hoje</option><option value="week">Esta semana</option></select>
-              <input id="reportMonth" type="month" />
+              <div id="reportPeriodButtons" class="period-segment" aria-label="Período do relatório">
+                <button type="button" class="active" data-report-period="month">Este mês</button>
+                <button type="button" data-report-period="today">Hoje</button>
+                <button type="button" data-report-period="week">Esta semana</button>
+              </div>
+              <input id="reportPeriodPreset" type="hidden" value="month" />
+              <div class="month-stepper" aria-label="Mês do relatório">
+                <button id="reportPrevMonth" type="button" class="month-step-btn" title="Mês anterior"><i data-lucide="chevron-left"></i></button>
+                <button id="reportMonthLabel" type="button" class="month-step-label">Outubro de 2026</button>
+                <button id="reportNextMonth" type="button" class="month-step-btn" title="Próximo mês"><i data-lucide="chevron-right"></i></button>
+              </div>
+              <input id="reportMonth" type="hidden" />
               <button id="exportExcelBtn" class="btn secondary"><i data-lucide="sheet"></i>Exportar Excel</button>
               <button id="printReportBtn" class="btn primary"><i data-lucide="file-down"></i>Exportar PDF</button>
             </div>
