@@ -221,6 +221,10 @@
 
       <section id="view-agenda" class="view">
         <div class="workspace">
+          <div class="module-head">
+            <div><span class="eyebrow">ATENDIMENTOS</span><h3>Agenda da clínica</h3></div>
+            <button class="btn secondary guide-link" type="button" data-help-topic="help-agenda"><i data-lucide="circle-help"></i>Ver Guia Rápido</button>
+          </div>
           <div class="toolbar">
             <input id="agendaMonth" type="month" />
             <select id="agendaStatus">
@@ -233,20 +237,21 @@
             <div class="toolbar-search wide"><i data-lucide="search"></i><input id="agendaSearch" class="search" placeholder="Pesquisar paciente, procedimento ou profissional" /></div>
           </div>
           <div id="agendaCalendar" class="calendar"></div>
-          <div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Profissional</th><th>Status</th><th></th></tr></thead><tbody id="agendaRows"></tbody></table></div>
+          <div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Hora</th><th>Paciente</th><th>Tipo</th><th>Profissional</th><th>Status</th><th class="align-right">Ações</th></tr></thead><tbody id="agendaRows"></tbody></table></div>
         </div>
       </section>
-
       <section id="view-patients" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="patientSearch" class="search" placeholder="Pesquisar por nome, telefone ou CPF" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Paciente</th><th>Telefone</th><th>CPF</th><th>Cobrança</th><th>Observações</th><th></th></tr></thead><tbody id="patientRows"></tbody></table></div></div></section>
       <section id="view-applications" class="view"><div class="workspace"><div class="toolbar"><input id="appMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="applicationSearch" class="search" placeholder="Pesquisar paciente ou medicação" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Paciente</th><th>Medicação</th><th>Dose</th><th>Valor</th><th>Pagamento</th><th></th></tr></thead><tbody id="applicationRows"></tbody></table></div></div></section>
       <section id="view-finance" class="view">
-        <div class="module-tabs">
+        <div class="module-tabs finance-tabs">
           <button class="active" data-finance-tab="overview">Visão geral</button>
+          <button data-finance-tab="cash">Caixa do Dia</button>
           <button data-view-go="receivables">Contas a receber</button>
           <button data-view-go="expenses">Contas a pagar</button>
           <button data-finance-tab="commissions">Comissões</button>
           <button data-finance-tab="methods">Formas de pagamento</button>
         </div>
+
         <div id="financeOverviewPanel">
           <div class="metrics finance-metrics">
             <article class="metric-card"><div class="metric-icon"><i data-lucide="arrow-down-left"></i></div><div><span>Entradas do mês</span><strong id="fIncome">R$ 0,00</strong></div></article>
@@ -259,14 +264,89 @@
             <article class="panel"><div class="panel-head"><h3>Últimas despesas</h3></div><div id="financeExpenseList" class="list"></div></article>
           </div>
         </div>
+
+        <div id="financeCashPanel" class="hidden">
+          <div class="cash-header">
+            <div>
+              <span class="eyebrow">CAIXA DIÁRIO</span>
+              <h2>Caixa do Dia</h2>
+              <p id="cashDateLabel">Movimentações financeiras de hoje.</p>
+            </div>
+            <div class="cash-header-actions">
+              <button class="btn secondary guide-link" type="button" data-help-topic="help-cash"><i data-lucide="circle-help"></i>Ver Guia Rápido</button>
+              <button id="openCashBtn" class="btn primary" type="button"><i data-lucide="store"></i>Abrir Caixa do Dia</button>
+            </div>
+          </div>
+
+          <div id="cashClosedState" class="cash-empty hidden">
+            <div class="cash-empty-icon"><i data-lucide="circle-dollar-sign"></i></div>
+            <h3>O caixa de hoje ainda não foi aberto</h3>
+            <p>Informe apenas o fundo de troco. A data e o usuário são preenchidos automaticamente.</p>
+            <button class="btn primary" type="button" data-cash-action="open">Abrir Caixa do Dia</button>
+          </div>
+
+          <div id="cashOpenState" class="hidden">
+            <div class="cash-status-row">
+              <div class="cash-status-card">
+                <span id="cashStatusBadge" class="badge ok">ABERTO</span>
+                <strong id="cashOpenedBy">—</strong>
+                <small id="cashOpenedAt">—</small>
+              </div>
+              <div class="cash-quick-actions">
+                <button class="btn secondary" type="button" data-cash-action="supply"><i data-lucide="plus"></i>Suprimento</button>
+                <button class="btn secondary" type="button" data-cash-action="withdrawal"><i data-lucide="minus"></i>Sangria / Retirada</button>
+                <button class="btn primary" type="button" data-cash-action="close"><i data-lucide="lock-keyhole"></i>Fechar Caixa</button>
+              </div>
+            </div>
+
+            <div class="cash-kpis">
+              <article><span>Fundo de troco</span><strong id="cashOpeningBalance">R$ 0,00</strong></article>
+              <article><span>Dinheiro calculado</span><strong id="cashExpectedCash">R$ 0,00</strong></article>
+              <article><span>Pix</span><strong id="cashPixTotal">R$ 0,00</strong></article>
+              <article><span>Cartões</span><strong id="cashCardTotal">R$ 0,00</strong></article>
+              <article><span>Convênios</span><strong id="cashInsuranceTotal">R$ 0,00</strong></article>
+            </div>
+
+            <div class="cash-body-grid">
+              <article class="workspace cash-movements-card">
+                <div class="panel-head"><div><span class="eyebrow">MOVIMENTAÇÕES</span><h3>Lançamentos de hoje</h3></div></div>
+                <div class="tablewrap"><table class="data-table"><thead><tr><th>Horário</th><th>Tipo</th><th>Descrição</th><th>Forma</th><th class="align-right">Valor</th></tr></thead><tbody id="cashMovementRows"></tbody></table></div>
+              </article>
+
+              <article class="workspace cash-summary-card">
+                <div class="panel-head"><div><span class="eyebrow">RESUMO</span><h3>Conferência do Caixa</h3></div></div>
+                <div class="cash-summary-list">
+                  <div><span>Entradas em dinheiro</span><strong id="cashCashReceipts">R$ 0,00</strong></div>
+                  <div><span>Suprimentos</span><strong id="cashSupplies">R$ 0,00</strong></div>
+                  <div><span>Sangrias / retiradas</span><strong id="cashWithdrawals">R$ 0,00</strong></div>
+                  <div class="cash-summary-total"><span>Dinheiro esperado na gaveta</span><strong id="cashExpectedCash2">R$ 0,00</strong></div>
+                </div>
+              </article>
+            </div>
+          </div>
+
+          <div id="cashFinishedState" class="cash-finished hidden">
+            <div class="cash-finished-head">
+              <div><span class="badge ok">CAIXA FECHADO</span><h3>Fechamento concluído</h3><p id="cashFinishedInfo"></p></div>
+              <button id="printCashBtn" class="btn secondary" type="button"><i data-lucide="printer"></i>Imprimir / Salvar PDF</button>
+            </div>
+            <div class="cash-kpis">
+              <article><span>Valor esperado</span><strong id="cashClosedExpected">R$ 0,00</strong></article>
+              <article><span>Valor contado</span><strong id="cashClosedCounted">R$ 0,00</strong></article>
+              <article><span>Diferença</span><strong id="cashClosedDifference">R$ 0,00</strong></article>
+            </div>
+          </div>
+        </div>
+
         <div id="financeCommissionsPanel" class="workspace hidden"><div class="panel-head"><div><span class="eyebrow">REPASSES</span><h3>Comissões por profissional</h3></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Profissional</th><th>% padrão</th><th>Base no mês</th><th>Comissão estimada</th></tr></thead><tbody id="commissionRows"></tbody></table></div></div>
+
         <div id="financeMethodsPanel" class="workspace hidden"><div class="panel-head"><div><span class="eyebrow">RECEBIMENTOS</span><h3>Resumo por forma de pagamento</h3></div></div><div id="paymentMethodCards" class="payment-method-grid"></div></div>
       </section>
       <section id="view-receivables" class="view"><div class="workspace"><div class="toolbar"><select id="receivableStatus"><option value="">Todos</option><option>PENDENTE</option><option>PAGO</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="receivableSearch" class="search" placeholder="Pesquisar paciente ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Vencimento</th><th>Paciente</th><th>Descrição</th><th>Valor</th><th>Status</th><th>Forma</th><th></th></tr></thead><tbody id="receivableRows"></tbody></table></div></div></section>
       <section id="view-expenses" class="view"><div class="workspace"><div class="toolbar"><input id="expenseMonth" type="month" /><div class="toolbar-search wide"><i data-lucide="search"></i><input id="expenseSearch" class="search" placeholder="Pesquisar categoria ou descrição" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Forma</th><th></th></tr></thead><tbody id="expenseRows"></tbody></table></div></div></section>
-      <section id="view-professionals" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="professionalSearch" class="search" placeholder="Pesquisar profissional ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Profissional</th><th>Especialidade</th><th>Telefone</th><th>Comissão</th><th>Status</th><th></th></tr></thead><tbody id="professionalRows"></tbody></table></div></div></section>
-      <section id="view-services" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="serviceSearch" class="search" placeholder="Pesquisar serviço ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Serviço</th><th>Especialidade</th><th>Duração</th><th>Valor</th><th>Status</th><th></th></tr></thead><tbody id="serviceRows"></tbody></table></div></div></section>
-      <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="stockSearch" class="search" placeholder="Pesquisar medicamento, material ou lote" /></div><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
+      <section id="view-professionals" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="professionalSearch" class="search" placeholder="Pesquisar profissional ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Profissional</th><th>Especialidade</th><th>Telefone</th><th>Comissão</th><th>Status</th><th class="align-right">Ações</th></tr></thead><tbody id="professionalRows"></tbody></table></div></div></section>
+      <section id="view-services" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="serviceSearch" class="search" placeholder="Pesquisar serviço ou especialidade" /></div></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Serviço</th><th>Especialidade</th><th>Duração</th><th>Valor</th><th>Status</th><th class="align-right">Ações</th></tr></thead><tbody id="serviceRows"></tbody></table></div></div></section>
+      <section id="view-stock" class="view"><div class="workspace"><div class="toolbar"><div class="toolbar-search wide"><i data-lucide="search"></i><input id="stockSearch" class="search" placeholder="Pesquisar medicamento, material ou lote" /></div><select id="stockFilter"><option value="">Todos</option><option value="low">Estoque baixo</option><option value="expiring">Validade próxima</option></select></div><div class="tablewrap"><table class="data-table"><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Mínimo</th><th>Lote</th><th>Validade</th><th class="align-right">Ações</th></tr></thead><tbody id="stockRows"></tbody></table></div></div></section>
       <section id="view-reminders" class="view"><div class="workspace"><div class="toolbar"><select id="reminderStatus"><option value="">Todos</option><option value="ABERTO">Abertos</option><option value="CONCLUÍDO">Concluídos</option></select><div class="toolbar-search wide"><i data-lucide="search"></i><input id="reminderSearch" class="search" placeholder="Pesquisar tarefa ou responsável" /></div></div><div id="reminderCards" class="reminder-grid"></div></div></section>
 
       <section id="view-users" class="view">
@@ -280,75 +360,61 @@
       </section>
 
       <section id="view-help" class="view">
-        <div class="help-hero">
+        <div class="help-hero help-hero-v2">
           <div>
             <span class="eyebrow">CENTRAL DE AJUDA</span>
-            <h2>Como usar o sistema</h2>
-            <p>Um guia rápido para a equipe aprender as principais rotinas sem depender de treinamento técnico.</p>
+            <h2>Como podemos ajudar?</h2>
+            <p>Pesquise uma dúvida ou abra um guia rápido para seguir o passo a passo.</p>
+            <div class="help-search"><i data-lucide="search"></i><input id="helpSearch" type="search" placeholder="Como podemos ajudar? Digite uma dúvida..." /></div>
           </div>
-          <div class="help-hero-icon"><i data-lucide="book-open-check"></i></div>
+          <div class="help-hero-actions">
+            <button id="whatsappSupportBtn" class="btn primary" type="button"><i data-lucide="message-circle"></i>Suporte via WhatsApp</button>
+          </div>
         </div>
 
-        <div class="help-grid">
-          <details class="help-card" open>
-            <summary><span class="help-icon"><i data-lucide="rocket"></i></span><div><strong>Primeiros passos</strong><small>O básico para começar</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <ol>
-                <li>Entre com seu e-mail e senha individual.</li>
-                <li>Confira o <strong>Painel</strong> para ver agenda, pendências e valores do dia.</li>
-                <li>Use o botão <strong>Novo agendamento</strong> no topo para marcar um atendimento rapidamente.</li>
-                <li>Use a busca no topo para localizar pacientes e registros sem navegar por várias telas.</li>
-              </ol>
-            </div>
-          </details>
+        <div id="helpTopics" class="help-topics">
+          <article id="help-cash" class="help-guide" data-help-keywords="caixa abrir fechar fechamento sangria suprimento dinheiro pix cartão">
+            <div class="help-guide-head"><span class="help-icon"><i data-lucide="circle-dollar-sign"></i></span><div><strong>Como abrir e fechar o Caixa Diário</strong><small>Rotina de início e fim do dia</small></div></div>
+            <ol class="steps">
+              <li><span>1</span><div><strong>Abra o Financeiro → Caixa do Dia</strong><p>Clique em <b>Abrir Caixa do Dia</b>.</p></div></li>
+              <li><span>2</span><div><strong>Informe somente o fundo de troco</strong><p>A data e o usuário são preenchidos automaticamente.</p></div></li>
+              <li><span>3</span><div><strong>Receba normalmente</strong><p>Pagamentos baixados entram automaticamente no Caixa por forma de pagamento.</p></div></li>
+              <li><span>4</span><div><strong>Use Suprimento ou Sangria quando necessário</strong><p>Registre valores adicionais ou retiradas com um motivo simples.</p></div></li>
+              <li><span>5</span><div><strong>Feche o caixa</strong><p>Digite o dinheiro contado na gaveta. O sistema informa automaticamente se bateu e mostra a diferença.</p></div></li>
+            </ol>
+          </article>
 
-          <details class="help-card">
-            <summary><span class="help-icon"><i data-lucide="calendar-days"></i></span><div><strong>Agenda</strong><small>Marcar, editar e acompanhar atendimentos</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <p>Para criar um atendimento, clique em <strong>Novo agendamento</strong>. No campo Paciente, comece a digitar o nome, telefone ou CPF e selecione a pessoa que aparecer na lista.</p>
-              <p>Use os filtros de status para visualizar rapidamente aguardando, confirmados, concluídos ou cancelados.</p>
-            </div>
-          </details>
+          <article id="help-agenda" class="help-guide" data-help-keywords="agenda agendar atendimento baixa concluir consulta profissional">
+            <div class="help-guide-head"><span class="help-icon"><i data-lucide="calendar-check-2"></i></span><div><strong>Como agendar e dar baixa em atendimentos</strong><small>Do agendamento à conclusão</small></div></div>
+            <ol class="steps">
+              <li><span>1</span><div><strong>Clique em Novo agendamento</strong><p>Pesquise o paciente pelo nome, telefone ou CPF.</p></div></li>
+              <li><span>2</span><div><strong>Escolha o tipo e o profissional</strong><p>Os profissionais ativos cadastrados aparecem automaticamente.</p></div></li>
+              <li><span>3</span><div><strong>Informe data, hora e status</strong><p>Use Agendado ou Confirmado para os próximos atendimentos.</p></div></li>
+              <li><span>4</span><div><strong>Conclua o atendimento</strong><p>Ao receber o pagamento, dê baixa no Financeiro; se o caixa estiver aberto, a entrada é lançada automaticamente.</p></div></li>
+            </ol>
+          </article>
 
-          <details class="help-card">
-            <summary><span class="help-icon"><i data-lucide="users"></i></span><div><strong>Pacientes</strong><small>Cadastro e pesquisa</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <p>Cadastre nome, telefone, CPF, e-mail e informações de cobrança. Depois, pesquise digitando qualquer parte do nome, telefone ou CPF.</p>
-              <p>Ao criar aplicações, recebimentos ou agendamentos, você não precisa percorrer uma lista enorme: basta começar a digitar o nome do paciente.</p>
-            </div>
-          </details>
+          <article id="help-patients" class="help-guide" data-help-keywords="paciente cadastro cpf telefone nome cadastrar rápido">
+            <div class="help-guide-head"><span class="help-icon"><i data-lucide="user-plus"></i></span><div><strong>Como cadastrar pacientes rapidamente</strong><small>Cadastro e pesquisa sem listas enormes</small></div></div>
+            <ol class="steps">
+              <li><span>1</span><div><strong>Abra Pacientes → Novo paciente</strong><p>Preencha os dados principais do cadastro.</p></div></li>
+              <li><span>2</span><div><strong>Salve uma única vez</strong><p>Depois disso, o paciente poderá ser localizado digitando as primeiras letras do nome, telefone ou CPF.</p></div></li>
+              <li><span>3</span><div><strong>Use a busca inteligente</strong><p>Nos agendamentos e lançamentos, digite o nome e escolha o resultado exibido.</p></div></li>
+            </ol>
+          </article>
 
-          <details class="help-card">
-            <summary><span class="help-icon"><i data-lucide="wallet-cards"></i></span><div><strong>Financeiro</strong><small>Recebimentos e despesas</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <p>Em <strong>A receber</strong>, registre valores pendentes e marque como pago quando receber. Em <strong>Despesas</strong>, registre as saídas da clínica.</p>
-              <p>A tela Financeiro calcula automaticamente entradas, despesas, saldo e valores pendentes.</p>
-            </div>
-          </details>
-
-          <details class="help-card">
-            <summary><span class="help-icon"><i data-lucide="boxes"></i></span><div><strong>Estoque</strong><small>Entradas, saídas e alertas</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <p>Cadastre cada item com quantidade, estoque mínimo, lote e validade. Use <strong>Movimentar</strong> para registrar entrada ou saída.</p>
-              <p>Os filtros ajudam a localizar itens com estoque baixo ou validade próxima.</p>
-            </div>
-          </details>
-
-          <details class="help-card">
-            <summary><span class="help-icon"><i data-lucide="user-cog"></i></span><div><strong>Usuários e acessos</strong><small>Somente administradores</small></div><i data-lucide="chevron-down" class="help-chevron"></i></summary>
-            <div class="help-content">
-              <p>Administradores podem criar logins individuais para cada pessoa da equipe, bloquear acessos e redefinir senhas.</p>
-              <p>Nunca compartilhe uma única senha entre toda a equipe; cada pessoa deve usar seu próprio acesso.</p>
-            </div>
-          </details>
+          <article id="help-history" class="help-guide" data-help-keywords="extrato histórico paciente financeiro cobrança pagamentos sessões">
+            <div class="help-guide-head"><span class="help-icon"><i data-lucide="history"></i></span><div><strong>Como consultar o extrato e histórico do paciente</strong><small>Pagamentos e registros do paciente</small></div></div>
+            <ol class="steps">
+              <li><span>1</span><div><strong>Localize o paciente</strong><p>Use a busca do módulo Pacientes.</p></div></li>
+              <li><span>2</span><div><strong>Consulte os lançamentos relacionados</strong><p>Em A Receber e Aplicações, pesquise pelo nome do paciente para ver cobranças e histórico.</p></div></li>
+              <li><span>3</span><div><strong>Confira pagamentos</strong><p>Os registros mostram status, forma de pagamento, valor e vencimento.</p></div></li>
+            </ol>
+          </article>
         </div>
 
-        <div class="help-tip">
-          <i data-lucide="lightbulb"></i>
-          <div><strong>Dica</strong><p>Se alguma tela ficar diferente depois de uma atualização, pressione <kbd>Ctrl + F5</kbd> para carregar a versão mais recente.</p></div>
-        </div>
+        <div id="helpNoResults" class="empty hidden">Nenhum guia encontrado para essa dúvida.</div>
       </section>
-
       <section id="view-reports" class="view">
         <div class="workspace report-workspace">
           <div class="report-topbar">
