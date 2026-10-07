@@ -1338,3 +1338,54 @@ input[readonly]{
   font-size:8px;
   line-height:1.25;
 }
+
+
+/* ===== Lista de múltiplos tratamentos no cadastro do paciente ===== */
+.patient-treatment-list{
+  display:grid;
+  gap:8px;
+  margin-top:2px;
+}
+.patient-treatment-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:11px 12px;
+  border:1px solid var(--line);
+  border-radius:10px;
+  background:var(--surface);
+}
+.patient-treatment-row-main{
+  min-width:0;
+}
+.patient-treatment-row-main strong{
+  display:block;
+  color:var(--text);
+  font-size:10px;
+  margin-bottom:3px;
+}
+.patient-treatment-row-main small,
+.patient-treatment-add small,
+.patient-treatment-empty{
+  display:block;
+  color:var(--muted);
+  font-size:8.5px;
+  line-height:1.35;
+}
+.patient-treatment-add{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding-top:2px;
+}
+.patient-treatment-add .btn{
+  flex:0 0 auto;
+}
+.patient-treatment-empty{
+  padding:12px;
+  border:1px dashed var(--line);
+  border-radius:10px;
+  background:var(--surface-2);
+}
