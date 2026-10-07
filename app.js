@@ -205,6 +205,21 @@ function bindEvents(){
     if(e.target.matches('.patient-search-input')) renderPatientResults(e.target);
     if(e.target.matches('.professional-search-input')) renderProfessionalResults(e.target);
     if(e.target.matches('.money-input')) normalizeMoneyInput(e.target);
+    if(e.target.matches('input[name="birth_date"]')){
+      const age=calculateAge(e.target.value);
+      if(el('patientAgeDisplay')) el('patientAgeDisplay').value=age!==null?age+' anos':'';
+    }
+  });
+
+  document.addEventListener('change',e=>{
+    if(e.target.matches('select[name="treatment_service_id"]')){
+      const opt=e.target.selectedOptions?.[0];
+      const price=Number(opt?.dataset?.price||0);
+      const input=qs('input[name="treatment_amount"]');
+      if(input){
+        input.value=price?price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
+      }
+    }
   });
 
   document.addEventListener('focusout',e=>{if(e.target.matches('.money-input')) finishMoneyInput(e.target);});
@@ -644,26 +659,75 @@ function openPatientWhatsApp(patient){
   const msg=`Olá${firstName?', '+firstName:''}! Tudo bem? Entramos em contato pela clínica para falar sobre seu agendamento.`;
   window.open('https://wa.me/'+number+'?text='+encodeURIComponent(msg),'_blank','noopener');
 }
+function calculateAge(birthDate){
+  if(!birthDate) return null;
+  const birth=new Date(String(birthDate)+'T12:00:00');
+  if(Number.isNaN(birth.getTime())) return null;
+  const now=new Date();
+  let age=now.getFullYear()-birth.getFullYear();
+  const m=now.getMonth()-birth.getMonth();
+  if(m<0 || (m===0 && now.getDate()<birth.getDate())) age--;
+  return Math.max(0,age);
+}
+function patientActiveTreatment(patientId){
+  return state.patientTreatments
+    .filter(t=>t.patient_id===patientId && String(t.status||'ATIVO').toUpperCase()==='ATIVO')
+    .sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')))[0]||null;
+}
+function treatmentServiceOptions(selected=''){
+  const rows=state.services.filter(x=>x.active!==false).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  return '<option value="">Selecione um tratamento / serviço</option>'+rows.map(x=>`<option value="${x.id}" data-price="${Number(x.price||0)}" ${x.id===selected?'selected':''}>${escapeHtml(x.name)}${x.specialty?' • '+escapeHtml(x.specialty):''}</option>`).join('');
+}
+function treatmentProfessionalOptions(selected=''){
+  const rows=state.professionals.filter(x=>x.active!==false).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  return '<option value="">Selecione o profissional</option>'+rows.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${escapeHtml(x.name)}${x.specialty?' • '+escapeHtml(x.specialty):''}</option>`).join('');
+}
+function patientTreatmentFields(patient){
+  const t=patient?.id?patientActiveTreatment(patient.id):null;
+  const service=t?.service_id?serviceById(t.service_id):null;
+  const amount=t?.amount_total ?? service?.price ?? '';
+  const sessions=t?.sessions_total ?? 1;
+  return `
+    <div class="form-section-title span2">Tratamento do paciente</div>
+    <input type="hidden" name="treatment_id" value="${escapeHtml(t?.id||'')}" />
+    ${field('treatment_service_id','Tratamento / Serviço','select',treatmentServiceOptions(t?.service_id||''))}
+    ${field('treatment_professional_id','Profissional responsável','select',treatmentProfessionalOptions(t?.professional_id||''))}
+    ${field('treatment_sessions_total','Quantidade de sessões','number',sessions)}
+    ${moneyField('treatment_amount','Valor do tratamento',amount)}
+    <div class="field span2 patient-treatment-hint">
+      <small>Ao escolher um serviço cadastrado, o valor é preenchido automaticamente e pode ser ajustado para este paciente.</small>
+    </div>
+  `;
+}
+
 function renderPatients(){
   const q=el('patientSearch').value.toLowerCase();
   const rows=state.patients.filter(p=>[p.name,p.phone,p.cpf].join(' ').toLowerCase().includes(q));
-  el('patientRows').innerHTML=rows.length?rows.map(p=>`<tr>
-    <td><strong>${escapeHtml(p.name)}</strong></td>
-    <td>
-      <div class="patient-phone-cell">
-        <span>${escapeHtml(p.phone||'—')}</span>
-        ${p.phone?`<button class="mini-btn whatsapp-btn" type="button" onclick="window.patientWhatsApp('${p.id}')">WhatsApp</button>`:''}
-      </div>
-    </td>
-    <td>${escapeHtml(p.cpf||'')}</td>
-    <td>${escapeHtml(p.billing_type||'')}</td>
-    <td title="${escapeHtml(p.notes||'')}">${escapeHtml((p.notes||'').slice(0,45))}</td>
-    <td class="row-actions">
-      <button class="mini-btn chart-btn" type="button" onclick="window.openPatientChart('${p.id}')">Prontuário</button>
-      <button class="mini-btn" type="button" onclick="window.appEdit('patient','${p.id}')">Editar</button>
-      <button class="mini-btn danger" type="button" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button>
-    </td>
-  </tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum paciente encontrado.</td></tr>';
+  el('patientRows').innerHTML=rows.length?rows.map(p=>{
+    const age=calculateAge(p.birth_date);
+    const t=patientActiveTreatment(p.id);
+    const service=t?.service_id?serviceById(t.service_id):null;
+    const treatmentName=service?.name||t?.specialty||'Sem tratamento';
+    const treatmentValue=t?money(t.amount_total||service?.price||0):'—';
+    return `<tr>
+      <td><strong>${escapeHtml(p.name)}</strong></td>
+      <td>${p.birth_date?dateBR(p.birth_date):'—'}<small>${age!==null?age+' anos':'Idade não informada'}</small></td>
+      <td>
+        <div class="patient-phone-cell">
+          <span>${escapeHtml(p.phone||'—')}</span>
+          ${p.phone?`<button class="mini-btn whatsapp-btn" type="button" onclick="window.patientWhatsApp('${p.id}')">WhatsApp</button>`:''}
+        </div>
+      </td>
+      <td><strong>${escapeHtml(treatmentName)}</strong><small>${t?Number(t.sessions_used||0)+'/'+Number(t.sessions_total||0)+' sessões':'Nenhum tratamento ativo'}</small></td>
+      <td><strong>${escapeHtml(p.billing_type||'—')}</strong><small>${treatmentValue}</small></td>
+      <td>${escapeHtml(p.cpf||'')}</td>
+      <td class="row-actions">
+        <button class="mini-btn chart-btn" type="button" onclick="window.openPatientChart('${p.id}')">Prontuário</button>
+        <button class="mini-btn" type="button" onclick="window.appEdit('patient','${p.id}')">Editar</button>
+        <button class="mini-btn danger" type="button" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button>
+      </td>
+    </tr>`;
+  }).join(''):'<tr><td colspan="7" class="empty">Nenhum paciente encontrado.</td></tr>';
 }
 function renderAgenda(){
   const month=el('agendaMonth')?.value||monthISO();
@@ -1229,7 +1293,19 @@ function openForm(type,id=null){
 }
 function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
 function formHtml(type,r){
-  if(type==='patient') return field('name','Nome','text',r.name,'span2')+field('phone','Telefone / WhatsApp','tel',r.phone)+field('birth_date','Data de nascimento','date',r.birth_date)+field('cpf','CPF','text',r.cpf)+field('email','E-mail','email',r.email)+field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)+field('billing_day','Dia de vencimento','number',r.billing_day)+field('notes','Observações','textarea',r.notes,'span2');
+  if(type==='patient'){
+    const age=calculateAge(r.birth_date);
+    return field('name','Nome','text',r.name,'span2')
+      +field('phone','Telefone / WhatsApp','tel',r.phone)
+      +field('birth_date','Data de nascimento','date',r.birth_date)
+      +`<div class="field"><label>Idade</label><input id="patientAgeDisplay" type="text" value="${age!==null?age+' anos':''}" placeholder="Calculada automaticamente" readonly /></div>`
+      +field('cpf','CPF','text',r.cpf)
+      +field('email','E-mail','email',r.email)
+      +field('billing_type','Tipo de cobrança','select',`<option ${r.billing_type==='PARTICULAR'?'selected':''}>PARTICULAR</option><option ${r.billing_type==='MENSAL'?'selected':''}>MENSAL</option>`)
+      +field('billing_day','Dia de vencimento','number',r.billing_day)
+      +patientTreatmentFields(r)
+      +field('notes','Observações','textarea',r.notes,'span2');
+  }
   if(type==='appointment') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('type','Tipo de atendimento','select',appointmentTypeOptions(r.type||'Consulta'))+professionalSearchField(r.professional_id,r.professional)+field('status','Status','select',`<option ${r.status==='AGENDADO'?'selected':''}>AGENDADO</option><option ${r.status==='CONFIRMADO'?'selected':''}>CONFIRMADO</option><option ${r.status==='ATENDIDO'?'selected':''}>ATENDIDO</option><option ${r.status==='FALTOU'?'selected':''}>FALTOU</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='application') return patientSearchField(r.patient_id)+field('date','Data','date',r.date||todayISO())+medicationField(r.medication)+field('dose','Dosagem','text',r.dose)+field('dose_unit','Unidade da dosagem','select',dosageUnitOptions(r.dose_unit))+field('frequency','Frequência / orientação','text',r.frequency)+moneyField('amount','Valor',r.amount)+field('billing','Cobrança','select',`<option ${r.billing==='AVULSA'?'selected':''}>AVULSA</option><option ${r.billing==='MENSAL'?'selected':''}>MENSAL</option>`)+field('payment_status','Status do pagamento','select',`<option ${r.payment_status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.payment_status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('due_date','Vencimento','date',r.due_date)+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='receivable') return patientSearchField(r.patient_id)+field('description','Descrição','text',r.description,'span2')+field('due_date','Vencimento','date',r.due_date||todayISO())+moneyField('amount','Valor',r.amount)+field('status','Status','select',`<option ${r.status==='PENDENTE'?'selected':''}>PENDENTE</option><option ${r.status==='PAGO'?'selected':''}>PAGO</option>`)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('notes','Observações','textarea',r.notes,'span2');
@@ -1274,6 +1350,34 @@ async function saveModal(e){
       :await supabase.from(table).insert(payload).select().maybeSingle();
     if(res.error) throw res.error;
     const saved=res.data;
+
+    if(type==='patient' && saved){
+      const serviceId=raw.treatment_service_id||null;
+      const treatmentId=raw.treatment_id||null;
+      if(serviceId){
+        const service=serviceById(serviceId);
+        const treatmentPayload={
+          patient_id:saved.id,
+          professional_id:raw.treatment_professional_id||null,
+          service_id:serviceId,
+          specialty:service?.specialty||null,
+          sessions_total:Math.max(1,Number(raw.treatment_sessions_total||1)),
+          amount_total:parseMoneyInput(raw.treatment_amount||service?.price||0),
+          status:'ATIVO',
+          started_at:record?.id?(patientActiveTreatment(saved.id)?.started_at||todayISO()):todayISO(),
+          updated_at:new Date().toISOString()
+        };
+        let treatmentRes;
+        if(treatmentId){
+          treatmentRes=await supabase.from('patient_treatments').update(treatmentPayload).eq('id',treatmentId).select().maybeSingle();
+        }else{
+          treatmentRes=await supabase.from('patient_treatments').insert(treatmentPayload).select().maybeSingle();
+        }
+        if(treatmentRes.error) throw treatmentRes.error;
+        await audit(treatmentId?'UPDATE':'INSERT','patient_treatments',treatmentId||treatmentRes.data?.id||'',treatmentPayload);
+      }
+    }
+
     await audit(id?'UPDATE':'INSERT',table,id||saved?.id||'',payload);
     closeModal(); await loadAll(); toast('Registro salvo.');
   }catch(err){toast(err.message||'Erro ao salvar.',true);}finally{save.disabled=false;}
