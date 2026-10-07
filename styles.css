@@ -1304,3 +1304,37 @@ html[data-theme="rose"] .chart-btn{background:#FFF0F1!important;border-color:#FF
   .chart-quick-grid,.chart-two-col{grid-template-columns:1fr}
   .evolution-form{grid-template-columns:1fr}
 }
+
+
+/* ===== Cadastro de paciente: idade + tratamento ===== */
+.form-section-title{
+  grid-column:1/-1;
+  margin-top:4px;
+  padding:10px 0 6px;
+  border-top:1px solid var(--line);
+  color:var(--primary-strong);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+}
+.patient-treatment-hint{
+  margin-top:-4px;
+}
+.patient-treatment-hint small{
+  color:var(--muted);
+  font-size:8.5px;
+  line-height:1.35;
+}
+input[readonly]{
+  background:var(--surface-2);
+  color:var(--muted);
+  cursor:default;
+}
+.data-table td small{
+  display:block;
+  margin-top:3px;
+  color:var(--muted);
+  font-size:8px;
+  line-height:1.25;
+}
