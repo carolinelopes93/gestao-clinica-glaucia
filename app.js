@@ -47,7 +47,6 @@ async function boot(){
   if(el('clinicName')) el('clinicName').textContent = cfg.CLINIC_NAME || 'Gestão Clínica';
   setDefaultMonths();
   bindEvents();
-  showOnly('loginScreen');
 
   const loginBtn=el('loginBtn');
   if(loginBtn){
@@ -238,7 +237,7 @@ function bindEvents(){
   [['patientSearch','patients'],['agendaSearch','agenda'],['applicationSearch','applications'],['receivableSearch','receivables'],['expenseSearch','expenses'],['professionalSearch','professionals'],['serviceSearch','services'],['stockSearch','stock'],['reminderSearch','reminders']]
     .forEach(([id,v])=>el(id)?.addEventListener('input',()=>render(v)));
 
-  ['agendaMonth','appMonth','expenseMonth','reportMonth','receivableStatus','stockFilter','reminderStatus']
+  ['agendaMonth','appMonth','expenseMonth','reportMonth','receivableStatus','stockFilter','reminderStatus','patientStatusFilter']
     .forEach(id=>el(id)?.addEventListener('change',()=>render(id==='reportMonth'?'reports':currentView)));
 }
 
@@ -392,7 +391,12 @@ async function enterApp(user){
   if(el('topUserRole')) el('topUserRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
   renderUserAvatars();
   el('usersNavBtn')?.classList.toggle('hidden',currentProfile.role!=='admin');
-  showOnly('app'); await loadAll();
+  showOnly('app');
+  await loadAll();
+  let target='dashboard';
+  try{target=localStorage.getItem('clinicCurrentView')||'dashboard';}catch(_e){}
+  if(!viewMeta[target] || (target==='users' && currentProfile?.role!=='admin')) target='dashboard';
+  switchView(target);
 }
 
 async function loadAll(showToast=false){
@@ -411,6 +415,7 @@ function switchView(v){
   if(!meta || !view) return toast('Esta tela ainda não está disponível.',true);
 
   currentView=v;
+  try{localStorage.setItem('clinicCurrentView',v);}catch(_e){}
   qsa('.view').forEach(x=>x.classList.remove('active'));
   view.classList.add('active');
   qsa('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
@@ -1431,6 +1436,10 @@ window.deletePatientPermanently=async id=>{
   const p=state.patients.find(x=>x.id===id);
   if(!p)return toast('Paciente não encontrado.',true);
 
+  if(currentProfile?.role!=='admin'){
+    return toast('Somente administradores podem excluir pacientes permanentemente.',true);
+  }
+
   const linked={
     agendamentos:state.agenda.filter(x=>x.patient_id===id).length,
     aplicacoes:state.applications.filter(x=>x.patient_id===id).length,
@@ -1441,17 +1450,26 @@ window.deletePatientPermanently=async id=>{
   };
   const total=Object.values(linked).reduce((a,b)=>a+b,0);
 
-  if(total>0){
-    toast('Este paciente possui histórico vinculado. Por segurança, use Arquivar em vez de excluir.',true);
-    return;
+  const details=total>0
+    ? `\n\nEste paciente possui ${total} registro(s) vinculado(s) no sistema. Ao excluir, também serão apagados os dados vinculados de teste, como agendamentos, aplicações, cobranças, tratamentos e evoluções.\n\nSe for um paciente real com histórico que precisa ser preservado, use Arquivar.`
+    : '\n\nEste paciente não possui histórico vinculado.';
+
+  const ok=confirm(
+    `EXCLUIR PACIENTE PERMANENTEMENTE?\n\n${p.name}${details}\n\nEsta ação não pode ser desfeita. Deseja continuar?`
+  );
+  if(!ok)return;
+
+  const {data,error}=await supabase.rpc('delete_patient_completely',{p_patient_id:id});
+  if(error){
+    const msg=String(error.message||'');
+    if(msg.toLowerCase().includes('caixa já fechado')||msg.toLowerCase().includes('caixa ja fechado')){
+      return toast('Este paciente possui movimentação em um caixa já fechado. Para preservar o fechamento financeiro, ele deve ser arquivado.',true);
+    }
+    return toast('Não foi possível excluir o paciente: '+msg,true);
   }
 
-  if(!confirm(`Excluir permanentemente ${p.name}?\n\nEsta ação não pode ser desfeita.`))return;
-  const {error}=await supabase.from('patients').delete().eq('id',id);
-  if(error)return toast('Não foi possível excluir porque ainda existem registros vinculados. Arquive o paciente.',true);
-  await audit('DELETE','patients',id,{name:p.name});
   await loadAll();
-  toast('Paciente excluído permanentemente.');
+  toast('Paciente excluído permanentemente com os registros vinculados.');
 };
 
 window.appDelete=async(table,id,label)=>{ if(!confirm(`Excluir ${label}?`))return; const {error}=await supabase.from(table).delete().eq('id',id); if(error)return toast(error.message,true); await audit('DELETE',table,id,{label}); await loadAll(); toast('Registro excluído.'); };
