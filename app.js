@@ -96,6 +96,14 @@ async function boot(){
     }
   });
 
+  window.addEventListener('hashchange',()=>{
+    if(!currentUser) return;
+    const target=String(location.hash||'').replace(/^#/,'');
+    if(viewMeta[target] && !(target==='users' && currentProfile?.role!=='admin') && target!==currentView){
+      switchView(target);
+    }
+  });
+
   setTimeout(refreshIcons,80);
 }
 
@@ -384,19 +392,33 @@ function renderUserAvatars(){
 
 async function enterApp(user){
   currentUser=user;
-  const {data}=await supabase.from('profiles').select('*').eq('id',user.id).maybeSingle(); currentProfile=data||{full_name:user.email,role:'staff',active:true};
-  if(currentProfile.active===false){ await supabase.auth.signOut(); toast('Usuário sem acesso ao sistema.',true); return; }
-  el('userName').textContent=currentProfile.full_name||user.email; el('userRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
+  const {data}=await supabase.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  currentProfile=data||{full_name:user.email,role:'staff',active:true};
+
+  if(currentProfile.active===false){
+    await supabase.auth.signOut();
+    toast('Usuário sem acesso ao sistema.',true);
+    return;
+  }
+
+  el('userName').textContent=currentProfile.full_name||user.email;
+  el('userRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
   if(el('topUserName')) el('topUserName').textContent=currentProfile.full_name||user.email;
   if(el('topUserRole')) el('topUserRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
   renderUserAvatars();
   el('usersNavBtn')?.classList.toggle('hidden',currentProfile.role!=='admin');
-  showOnly('app');
-  await loadAll();
-  let target='dashboard';
-  try{target=localStorage.getItem('clinicCurrentView')||'dashboard';}catch(_e){}
+
+  let target=String(location.hash||'').replace(/^#/,'');
+  if(!target){
+    try{target=localStorage.getItem('clinicCurrentView')||'dashboard';}
+    catch(_e){target='dashboard';}
+  }
   if(!viewMeta[target] || (target==='users' && currentProfile?.role!=='admin')) target='dashboard';
+
+  // Não mostra o aplicativo antes da tela correta estar pronta.
+  await loadAll();
   switchView(target);
+  showOnly('app');
 }
 
 async function loadAll(showToast=false){
@@ -416,6 +438,9 @@ function switchView(v){
 
   currentView=v;
   try{localStorage.setItem('clinicCurrentView',v);}catch(_e){}
+  if(location.hash!=='#'+v){
+    try{history.replaceState(null,'','#'+v);}catch(_e){}
+  }
   qsa('.view').forEach(x=>x.classList.remove('active'));
   view.classList.add('active');
   qsa('#nav button[data-view]').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
