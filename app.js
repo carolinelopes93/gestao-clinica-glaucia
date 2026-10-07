@@ -422,14 +422,57 @@ async function enterApp(user){
   showOnly('app');
 }
 
+async function fetchAllRows(table,{order='created_at',ascending=false,pageSize=500}={}){
+  const all=[];
+  for(let from=0;;from+=pageSize){
+    let query=supabase.from(table).select('*');
+    if(order) query=query.order(order,{ascending});
+    const {data,error}=await query.range(from,from+pageSize-1);
+    if(error) throw error;
+    const rows=data||[];
+    all.push(...rows);
+    if(rows.length<pageSize) break;
+  }
+  return all;
+}
+
 async function loadAll(showToast=false){
-  const tables=['patients','appointments','applications','receivables','expenses','stock_items','team_reminders','stock_movements','professionals','services','cash_sessions','cash_movements','patient_treatments','patient_evolutions'];
-  const keys=['patients','agenda','applications','receivables','expenses','stock','reminders','stockMovements','professionals','services','cashSessions','cashMovements','patientTreatments','patientEvolutions'];
-  const results=await Promise.all(tables.map(t=>supabase.from(t).select('*').order('created_at',{ascending:false})));
-  const err=results.find(r=>r.error)?.error; if(err){toast('Erro ao carregar dados: '+err.message,true);return;}
-  results.forEach((r,i)=>state[keys[i]]=r.data||[]);
-  if(currentProfile?.role==='admin') await loadUsers();
-  renderAll(); renderNotifications(); refreshIcons(); if(showToast) toast('Dados atualizados.');
+  const sources=[
+    ['patients','patients'],
+    ['appointments','agenda'],
+    ['applications','applications'],
+    ['receivables','receivables'],
+    ['expenses','expenses'],
+    ['stock_items','stock'],
+    ['team_reminders','reminders'],
+    ['stock_movements','stockMovements'],
+    ['professionals','professionals'],
+    ['services','services'],
+    ['cash_sessions','cashSessions'],
+    ['cash_movements','cashMovements'],
+    ['patient_treatments','patientTreatments'],
+    ['patient_evolutions','patientEvolutions']
+  ];
+
+  try{
+    const results=await Promise.all(
+      sources.map(async([table,key])=>[key,await fetchAllRows(table)])
+    );
+    results.forEach(([key,rows])=>state[key]=rows);
+
+    if(currentProfile?.role==='admin') await loadUsers();
+
+    // Renderiza somente a tela atual. Antes o sistema reconstruía todas as telas
+    // a cada atualização, mesmo as que estavam ocultas.
+    render(currentView);
+    renderNotifications();
+    refreshIcons();
+
+    if(showToast) toast('Dados atualizados.');
+  }catch(err){
+    console.error('Erro ao carregar dados:',err);
+    toast('Erro ao carregar dados: '+(err?.message||'falha inesperada'),true);
+  }
 }
 
 function switchView(v){
