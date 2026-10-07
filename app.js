@@ -709,7 +709,13 @@ function patientTreatmentFields(patient){
 
 function renderPatients(){
   const q=el('patientSearch').value.toLowerCase();
-  const rows=state.patients.filter(p=>[p.name,p.phone,p.cpf].join(' ').toLowerCase().includes(q));
+  const statusFilter=el('patientStatusFilter')?.value||'active';
+  const rows=state.patients.filter(p=>{
+    const matches=[p.name,p.phone,p.cpf].join(' ').toLowerCase().includes(q);
+    const active=p.active!==false;
+    const statusOk=statusFilter==='all'||(statusFilter==='active'&&active)||(statusFilter==='archived'&&!active);
+    return matches&&statusOk;
+  });
   el('patientRows').innerHTML=rows.length?rows.map(p=>{
     const age=calculateAge(p.birth_date);
     const t=patientActiveTreatment(p.id);
@@ -731,7 +737,10 @@ function renderPatients(){
       <td class="row-actions">
         <button class="mini-btn chart-btn" type="button" onclick="window.openPatientChart('${p.id}')">Prontuário</button>
         <button class="mini-btn" type="button" onclick="window.appEdit('patient','${p.id}')">Editar</button>
-        <button class="mini-btn danger" type="button" onclick="window.appDelete('patients','${p.id}','${escapeHtml(p.name)}')">Excluir</button>
+        ${p.active!==false
+          ?`<button class="mini-btn danger" type="button" onclick="window.archivePatient('${p.id}')">Arquivar</button>`
+          :`<button class="mini-btn" type="button" onclick="window.restorePatient('${p.id}')">Reativar</button>`}
+        <button class="mini-btn danger" type="button" onclick="window.deletePatientPermanently('${p.id}')">Excluir</button>
       </td>
     </tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">Nenhum paciente encontrado.</td></tr>';
@@ -1397,6 +1406,54 @@ async function audit(action,module,record_id,details){ try{await supabase.from('
 window.appEdit=(type,id)=>openForm(type,id);
 window.patientWhatsApp=id=>{const p=state.patients.find(x=>x.id===id);if(p)openPatientWhatsApp(p);};
 window.stockMove=id=>{const r=state.stock.find(x=>x.id===id);modalContext=null;openForm('stockMove',null);modalContext.record=r; el('modalBody').innerHTML=formHtml('stockMove',r)};
+window.archivePatient=async id=>{
+  const p=state.patients.find(x=>x.id===id);
+  if(!p)return toast('Paciente não encontrado.',true);
+  if(!confirm(`Arquivar ${p.name}?\n\nO histórico clínico e financeiro será preservado.`))return;
+  const {error}=await supabase.from('patients').update({active:false,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast('Não foi possível arquivar o paciente.',true);
+  await audit('ARCHIVE','patients',id,{name:p.name});
+  await loadAll();
+  toast('Paciente arquivado. O histórico foi preservado.');
+};
+
+window.restorePatient=async id=>{
+  const p=state.patients.find(x=>x.id===id);
+  if(!p)return toast('Paciente não encontrado.',true);
+  const {error}=await supabase.from('patients').update({active:true,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error)return toast('Não foi possível reativar o paciente.',true);
+  await audit('RESTORE','patients',id,{name:p.name});
+  await loadAll();
+  toast('Paciente reativado.');
+};
+
+window.deletePatientPermanently=async id=>{
+  const p=state.patients.find(x=>x.id===id);
+  if(!p)return toast('Paciente não encontrado.',true);
+
+  const linked={
+    agendamentos:state.agenda.filter(x=>x.patient_id===id).length,
+    aplicacoes:state.applications.filter(x=>x.patient_id===id).length,
+    recebiveis:state.receivables.filter(x=>x.patient_id===id).length,
+    tratamentos:state.patientTreatments.filter(x=>x.patient_id===id).length,
+    evolucoes:state.patientEvolutions.filter(x=>x.patient_id===id).length,
+    caixa:state.cashMovements.filter(x=>x.patient_id===id).length
+  };
+  const total=Object.values(linked).reduce((a,b)=>a+b,0);
+
+  if(total>0){
+    toast('Este paciente possui histórico vinculado. Por segurança, use Arquivar em vez de excluir.',true);
+    return;
+  }
+
+  if(!confirm(`Excluir permanentemente ${p.name}?\n\nEsta ação não pode ser desfeita.`))return;
+  const {error}=await supabase.from('patients').delete().eq('id',id);
+  if(error)return toast('Não foi possível excluir porque ainda existem registros vinculados. Arquive o paciente.',true);
+  await audit('DELETE','patients',id,{name:p.name});
+  await loadAll();
+  toast('Paciente excluído permanentemente.');
+};
+
 window.appDelete=async(table,id,label)=>{ if(!confirm(`Excluir ${label}?`))return; const {error}=await supabase.from(table).delete().eq('id',id); if(error)return toast(error.message,true); await audit('DELETE',table,id,{label}); await loadAll(); toast('Registro excluído.'); };
 window.markPaid=async id=>{
   const receivable=state.receivables.find(r=>r.id===id);
