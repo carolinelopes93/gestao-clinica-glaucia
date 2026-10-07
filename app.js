@@ -736,21 +736,45 @@ function treatmentProfessionalOptions(selected=''){
   return '<option value="">Selecione o profissional</option>'+rows.map(x=>`<option value="${x.id}" ${x.id===selected?'selected':''}>${escapeHtml(x.name)}${x.specialty?' • '+escapeHtml(x.specialty):''}</option>`).join('');
 }
 function patientTreatmentFields(patient){
-  const t=patient?.id?patientActiveTreatment(patient.id):null;
-  const service=t?.service_id?serviceById(t.service_id):null;
-  const amount=t?.amount_total ?? service?.price ?? '';
-  const sessions=t?.sessions_total ?? 1;
-  const treatmentName=t?.treatment_name||service?.name||'';
+  if(patient?.id){
+    const treatments=state.patientTreatments
+      .filter(t=>t.patient_id===patient.id && !['CANCELADO','INATIVO'].includes(String(t.status||'ATIVO').toUpperCase()))
+      .sort((a,b)=>String(b.updated_at||b.created_at||'').localeCompare(String(a.updated_at||a.created_at||'')));
+
+    const list=treatments.length?treatments.map(t=>{
+      const service=t.service_id?serviceById(t.service_id):null;
+      const prof=t.professional_id?professionalById(t.professional_id):null;
+      const name=t.treatment_name||service?.name||t.specialty||'Tratamento';
+      return `
+        <div class="patient-treatment-row">
+          <div class="patient-treatment-row-main">
+            <strong>${escapeHtml(name)}</strong>
+            <small>${escapeHtml(prof?.name||'Profissional não informado')} • ${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)} sessões • ${money(t.amount_total||service?.price||0)}</small>
+          </div>
+          <button type="button" class="mini-btn" onclick="window.editPatientTreatment('${t.id}')">Editar</button>
+        </div>`;
+    }).join(''):`<div class="patient-treatment-empty">Nenhum tratamento cadastrado.</div>`;
+
+    return `
+      <div class="form-section-title span2">Tratamentos do paciente</div>
+      <div class="patient-treatment-list span2">${list}</div>
+      <div class="patient-treatment-add span2">
+        <button type="button" class="btn secondary" onclick="window.newPatientTreatment('${patient.id}')">+ Adicionar outro tratamento</button>
+        <small>Para alterar dados do cadastro do paciente, salve primeiro. Cada tratamento fica separado com seu próprio valor e sessões.</small>
+      </div>
+    `;
+  }
+
   return `
-    <div class="form-section-title span2">Tratamento do paciente</div>
-    <input type="hidden" name="treatment_id" value="${escapeHtml(t?.id||'')}" />
-    ${field('treatment_name','Tratamento','text',treatmentName)}
-    ${field('treatment_service_id','Serviço cadastrado (opcional)','select',treatmentServiceOptions(t?.service_id||''))}
-    ${field('treatment_professional_id','Profissional responsável','select',treatmentProfessionalOptions(t?.professional_id||''))}
-    ${field('treatment_sessions_total','Quantidade de sessões','number',sessions)}
-    ${moneyField('treatment_amount','Valor do tratamento',amount)}
+    <div class="form-section-title span2">Primeiro tratamento do paciente</div>
+    <input type="hidden" name="treatment_id" value="" />
+    ${field('treatment_name','Tratamento','text','')}
+    ${field('treatment_service_id','Serviço cadastrado (opcional)','select',treatmentServiceOptions(''))}
+    ${field('treatment_professional_id','Profissional responsável','select',treatmentProfessionalOptions(''))}
+    ${field('treatment_sessions_total','Quantidade de sessões','number',1)}
+    ${moneyField('treatment_amount','Valor do tratamento','')}
     <div class="field span2 patient-treatment-hint">
-      <small>Você pode digitar o tratamento livremente. Se também escolher um serviço cadastrado, o valor será preenchido automaticamente e ainda poderá ser ajustado para este paciente.</small>
+      <small>Cadastre o primeiro tratamento aqui. Depois de salvar o paciente, use “+ Adicionar outro tratamento” para incluir os próximos.</small>
     </div>
   `;
 }
