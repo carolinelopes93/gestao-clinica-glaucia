@@ -219,10 +219,11 @@ function bindEvents(){
   });
 
   document.addEventListener('change',e=>{
-    if(e.target.matches('select[name="treatment_service_id"]')){
+    if(e.target.matches('select[name="treatment_service_id"], select[name="service_id"]')){
       const opt=e.target.selectedOptions?.[0];
       const price=Number(opt?.dataset?.price||0);
-      const amountInput=qs('input[name="treatment_amount"]');
+      const isStandalone=e.target.name==='service_id';
+      const amountInput=qs(`input[name="${isStandalone?'amount_total':'treatment_amount'}"]`);
       const nameInput=qs('input[name="treatment_name"]');
       if(nameInput && !nameInput.value.trim() && e.target.value){
         const label=String(opt?.textContent||'').split(' • ')[0].trim();
@@ -555,7 +556,10 @@ function openPatientChart(patientId){
         const prof=professionalById(t.professional_id);
         const pct=Number(t.sessions_total||0)?Math.min(100,Math.round(Number(t.sessions_used||0)/Number(t.sessions_total||1)*100)):0;
         return `<div class="chart-treatment-row">
-          <div class="chart-treatment-top"><div><strong>${escapeHtml(t.treatment_name||service?.name||t.specialty||'Tratamento')}</strong><span>${escapeHtml(prof?.name||'Profissional não informado')}</span></div><b>${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)}</b></div>
+          <div class="chart-treatment-top">
+            <div><strong>${escapeHtml(t.treatment_name||service?.name||t.specialty||'Tratamento')}</strong><span>${escapeHtml(prof?.name||'Profissional não informado')} • ${money(t.amount_total||service?.price||0)}</span></div>
+            <div class="chart-treatment-actions"><b>${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)}</b><button type="button" class="mini-btn" onclick="window.editPatientTreatment('${t.id}')">Editar</button></div>
+          </div>
           <div class="chart-progress"><i style="width:${pct}%"></i></div>
         </div>`;
       }).join('')
@@ -598,7 +602,7 @@ function openPatientChart(patientId){
 
         <div class="chart-two-col">
           <article class="chart-card">
-            <div class="chart-card-head"><div><span class="eyebrow">TRATAMENTO</span><h3>Tratamento atual</h3></div></div>
+            <div class="chart-card-head"><div><span class="eyebrow">TRATAMENTOS</span><h3>Tratamentos do paciente</h3></div><button type="button" class="btn secondary small" onclick="window.newPatientTreatment('${p.id}')">+ Novo tratamento</button></div>
             ${treatmentHtml}
           </article>
           <article class="chart-card">
@@ -675,6 +679,20 @@ function openReceivableForPatient(patientId){
   refreshIcons();
 }
 
+window.newPatientTreatment=patientId=>{
+  const p=patientById(patientId);
+  if(!p)return toast('Paciente não encontrado.',true);
+  closePatientChart();
+  modalContext={type:'treatment',id:null,record:{patient_id:patientId,status:'ATIVO',sessions_total:1,started_at:todayISO()}};
+  el('modalEyebrow').textContent='TRATAMENTO';
+  el('modalTitle').textContent='Novo tratamento de '+p.name;
+  el('modalBody').innerHTML=formHtml('treatment',modalContext.record);
+  el('modal').classList.remove('hidden');
+  el('modal').setAttribute('aria-hidden','false');
+  refreshIcons();
+};
+window.editPatientTreatment=id=>openForm('treatment',id);
+
 window.openPatientChart=openPatientChart;
 window.savePatientEvolution=savePatientEvolution;
 window.patientRegisterPayment=openReceivableForPatient;
@@ -748,10 +766,11 @@ function renderPatients(){
   });
   el('patientRows').innerHTML=rows.length?rows.map(p=>{
     const age=calculateAge(p.birth_date);
-    const t=patientActiveTreatment(p.id);
+    const activeTreatments=state.patientTreatments.filter(t=>t.patient_id===p.id && String(t.status||'ATIVO').toUpperCase()==='ATIVO');
+    const t=activeTreatments[0]||null;
     const service=t?.service_id?serviceById(t.service_id):null;
     const treatmentName=t?.treatment_name||service?.name||t?.specialty||'Sem tratamento';
-    const treatmentValue=t?money(t.amount_total||service?.price||0):'—';
+    const treatmentValue=activeTreatments.length?money(activeTreatments.reduce((sum,x)=>sum+Number(x.amount_total||serviceById(x.service_id)?.price||0),0)):'—';
     return `<tr>
       <td><strong>${escapeHtml(p.name)}</strong></td>
       <td>${p.birth_date?dateBR(p.birth_date):'—'}<small>${age!==null?age+' anos':'Idade não informada'}</small></td>
@@ -761,7 +780,7 @@ function renderPatients(){
           ${p.phone?`<button class="mini-btn whatsapp-btn" type="button" onclick="window.patientWhatsApp('${p.id}')">WhatsApp</button>`:''}
         </div>
       </td>
-      <td><strong>${escapeHtml(treatmentName)}</strong><small>${t?Number(t.sessions_used||0)+'/'+Number(t.sessions_total||0)+' sessões':'Nenhum tratamento ativo'}</small></td>
+      <td><strong>${escapeHtml(treatmentName)}</strong><small>${activeTreatments.length>1?'+ '+(activeTreatments.length-1)+' outro(s) tratamento(s)':(t?Number(t.sessions_used||0)+'/'+Number(t.sessions_total||0)+' sessões':'Nenhum tratamento ativo')}</small></td>
       <td><strong>${escapeHtml(p.billing_type||'—')}</strong><small>${treatmentValue}</small></td>
       <td>${escapeHtml(p.cpf||'')}</td>
       <td class="row-actions">
@@ -1334,10 +1353,10 @@ function field(name,label,type='text',value='',opts=''){ if(type==='textarea')re
 
 function handleAction(type){ if(type==='print'){window.print();return;} if(type==='user'){openUserForm();return;} openForm(type); }
 function openForm(type,id=null){
-  const map={patient:['Paciente','patient'],appointment:['Agendamento','appointment'],application:['Aplicação','application'],receivable:['Valor a receber','receivable'],expense:['Despesa','expense'],professional:['Profissional','professional'],service:['Serviço','service'],stock:['Item de estoque','stock'],reminder:['Lembrete','reminder'],stockMove:['Movimentação de estoque','stockMove']};
+  const map={patient:['Paciente','patient'],appointment:['Agendamento','appointment'],application:['Aplicação','application'],receivable:['Valor a receber','receivable'],expense:['Despesa','expense'],professional:['Profissional','professional'],service:['Serviço','service'],treatment:['Tratamento','treatment'],stock:['Item de estoque','stock'],reminder:['Lembrete','reminder'],stockMove:['Movimentação de estoque','stockMove']};
   const [title]=map[type]||['Registro']; const record=id?getRecord(type,id):{}; modalContext={type,id,record}; el('modalTitle').textContent=(id?'Editar ':'Novo ')+title.toLowerCase(); el('modalBody').innerHTML=formHtml(type,record); el('modal').classList.remove('hidden'); el('modal').setAttribute('aria-hidden','false');
 }
-function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
+function getRecord(type,id){ const m={patient:'patients',appointment:'agenda',application:'applications',receivable:'receivables',expense:'expenses',professional:'professionals',service:'services',treatment:'patientTreatments',stock:'stock',reminder:'reminders'}; return state[m[type]]?.find(x=>x.id===id)||{}; }
 function formHtml(type,r){
   if(type==='patient'){
     const age=calculateAge(r.birth_date);
@@ -1358,6 +1377,19 @@ function formHtml(type,r){
   if(type==='expense') return field('date','Data','date',r.date||todayISO())+field('category','Categoria','text',r.category)+field('description','Descrição','text',r.description,'span2')+moneyField('amount','Valor',r.amount)+field('payment_method','Forma de pagamento','select',paymentOptions(r.payment_method))+field('notes','Observações','textarea',r.notes,'span2');
   if(type==='professional') return field('name','Nome do profissional','text',r.name,'span2')+field('specialty','Especialidade','select',specialtyOptions(r.specialty))+field('phone','Telefone / WhatsApp','text',r.phone)+field('email','E-mail','email',r.email)+field('commission_percent','Comissão padrão (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
   if(type==='service') return field('name','Nome do serviço','text',r.name,'span2')+field('specialty','Especialidade','select',specialtyOptions(r.specialty))+field('duration_minutes','Duração (min)','number',r.duration_minutes||30)+moneyField('price','Valor (R$)',r.price)+field('commission_percent','Comissão específica (%)','number',r.commission_percent)+field('active','Status','select',`<option value="true" ${r.active!==false?'selected':''}>ATIVO</option><option value="false" ${r.active===false?'selected':''}>INATIVO</option>`);
+  if(type==='treatment'){
+    const service=r.service_id?serviceById(r.service_id):null;
+    const treatmentName=r.treatment_name||service?.name||'';
+    return `<input type="hidden" name="patient_id" value="${escapeHtml(r.patient_id||'')}" />`
+      +field('treatment_name','Tratamento','text',treatmentName,'span2')
+      +field('service_id','Serviço cadastrado (opcional)','select',treatmentServiceOptions(r.service_id||''))
+      +field('professional_id','Profissional responsável','select',treatmentProfessionalOptions(r.professional_id||''))
+      +field('sessions_total','Quantidade de sessões','number',r.sessions_total||1)
+      +moneyField('amount_total','Valor do tratamento',r.amount_total??service?.price??'')
+      +field('started_at','Data de início','date',r.started_at||todayISO())
+      +field('status','Status','select',`<option ${!r.status||r.status==='ATIVO'?'selected':''}>ATIVO</option><option ${r.status==='ENCERRADO'?'selected':''}>ENCERRADO</option><option ${r.status==='CANCELADO'?'selected':''}>CANCELADO</option>`)
+      +field('notes','Observações','textarea',r.notes,'span2');
+  }
   if(type==='stock') return stockItemField(r.name)+field('category','Categoria','select',stockCategoryOptions(r.category))+field('unit','Unidade','select',stockUnitOptions(r.unit||'un'))+field('current_qty','Quantidade atual','number',r.current_qty)+field('minimum_qty','Estoque mínimo','number',r.minimum_qty)+field('lot','Lote','text',r.lot)+field('expiry_date','Validade','date',r.expiry_date)+moneyField('unit_cost','Custo unitário',r.unit_cost);
   if(type==='reminder') return field('title','Título','text',r.title,'span2')+field('date','Data','date',r.date||todayISO())+field('time','Hora','time',r.time)+field('priority','Prioridade','select',`<option ${r.priority==='BAIXA'?'selected':''}>BAIXA</option><option ${!r.priority||r.priority==='NORMAL'?'selected':''}>NORMAL</option><option ${r.priority==='ALTA'?'selected':''}>ALTA</option>`)+field('responsible','Responsável','text',r.responsible)+field('status','Status','select',`<option ${!r.status||r.status==='ABERTO'?'selected':''}>ABERTO</option><option ${r.status==='CONCLUÍDO'?'selected':''}>CONCLUÍDO</option>`)+field('description','Descrição','textarea',r.description,'span2');
   if(type==='stockMove') return field('stock_id','Item','select',`<option value="${r.id}" selected>${escapeHtml(r.name)}</option>`,'span2')+field('movement_type','Tipo','select','<option>ENTRADA</option><option>SAÍDA</option>')+field('quantity','Quantidade','number','1')+field('notes','Observações','textarea','','span2');
@@ -1387,6 +1419,26 @@ async function saveModal(e){
     if(type==='expense'){table='expenses';payload={date:raw.date,category:raw.category,description:raw.description,amount:parseMoneyInput(raw.amount),payment_method:raw.payment_method,notes:raw.notes};}
     if(type==='professional'){table='professionals';payload={name:raw.name,specialty:raw.specialty,phone:raw.phone,email:raw.email,commission_percent:Number(raw.commission_percent||0),active:raw.active!=='false'};}
     if(type==='service'){table='services';payload={name:raw.name,specialty:raw.specialty,duration_minutes:Number(raw.duration_minutes||30),price:parseMoneyInput(raw.price),commission_percent:raw.commission_percent?Number(raw.commission_percent):null,active:raw.active!=='false'};}
+    if(type==='treatment'){
+      if(!raw.patient_id) throw new Error('Paciente não informado.');
+      const service=raw.service_id?serviceById(raw.service_id):null;
+      const treatmentName=String(raw.treatment_name||'').trim();
+      if(!treatmentName && !raw.service_id) throw new Error('Informe o tratamento ou selecione um serviço.');
+      table='patient_treatments';
+      payload={
+        patient_id:raw.patient_id,
+        professional_id:raw.professional_id||null,
+        service_id:raw.service_id||null,
+        treatment_name:treatmentName||service?.name||'Tratamento',
+        specialty:service?.specialty||null,
+        sessions_total:Math.max(1,Number(raw.sessions_total||1)),
+        sessions_used:Number(record?.sessions_used||0),
+        amount_total:parseMoneyInput(raw.amount_total||service?.price||0),
+        status:raw.status||'ATIVO',
+        started_at:raw.started_at||todayISO(),
+        notes:raw.notes||null
+      };
+    }
     if(type==='stock'){table='stock_items';payload={name:raw.name,category:raw.category,unit:raw.unit,current_qty:Number(raw.current_qty||0),minimum_qty:Number(raw.minimum_qty||0),lot:raw.lot,expiry_date:raw.expiry_date||null,unit_cost:parseMoneyInput(raw.unit_cost),active:true};}
     if(type==='reminder'){table='team_reminders';payload={title:raw.title,date:raw.date,time:raw.time||null,priority:raw.priority,responsible:raw.responsible,status:raw.status,description:raw.description,completed_at:raw.status==='CONCLUÍDO'?(record.completed_at||new Date().toISOString()):null};}
     if(type==='stockMove'){ await saveStockMovement(raw); save.disabled=false; return; }
