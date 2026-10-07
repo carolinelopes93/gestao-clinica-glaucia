@@ -215,9 +215,14 @@ function bindEvents(){
     if(e.target.matches('select[name="treatment_service_id"]')){
       const opt=e.target.selectedOptions?.[0];
       const price=Number(opt?.dataset?.price||0);
-      const input=qs('input[name="treatment_amount"]');
-      if(input){
-        input.value=price?price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
+      const amountInput=qs('input[name="treatment_amount"]');
+      const nameInput=qs('input[name="treatment_name"]');
+      if(nameInput && !nameInput.value.trim() && e.target.value){
+        const label=String(opt?.textContent||'').split(' • ')[0].trim();
+        nameInput.value=label;
+      }
+      if(amountInput){
+        amountInput.value=price?price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'0,00';
       }
     }
   });
@@ -520,7 +525,7 @@ function openPatientChart(patientId){
         const prof=professionalById(t.professional_id);
         const pct=Number(t.sessions_total||0)?Math.min(100,Math.round(Number(t.sessions_used||0)/Number(t.sessions_total||1)*100)):0;
         return `<div class="chart-treatment-row">
-          <div class="chart-treatment-top"><div><strong>${escapeHtml(service?.name||t.specialty||'Tratamento')}</strong><span>${escapeHtml(prof?.name||'Profissional não informado')}</span></div><b>${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)}</b></div>
+          <div class="chart-treatment-top"><div><strong>${escapeHtml(t.treatment_name||service?.name||t.specialty||'Tratamento')}</strong><span>${escapeHtml(prof?.name||'Profissional não informado')}</span></div><b>${Number(t.sessions_used||0)}/${Number(t.sessions_total||0)}</b></div>
           <div class="chart-progress"><i style="width:${pct}%"></i></div>
         </div>`;
       }).join('')
@@ -687,15 +692,17 @@ function patientTreatmentFields(patient){
   const service=t?.service_id?serviceById(t.service_id):null;
   const amount=t?.amount_total ?? service?.price ?? '';
   const sessions=t?.sessions_total ?? 1;
+  const treatmentName=t?.treatment_name||service?.name||'';
   return `
     <div class="form-section-title span2">Tratamento do paciente</div>
     <input type="hidden" name="treatment_id" value="${escapeHtml(t?.id||'')}" />
-    ${field('treatment_service_id','Tratamento / Serviço','select',treatmentServiceOptions(t?.service_id||''))}
+    ${field('treatment_name','Tratamento','text',treatmentName)}
+    ${field('treatment_service_id','Serviço cadastrado (opcional)','select',treatmentServiceOptions(t?.service_id||''))}
     ${field('treatment_professional_id','Profissional responsável','select',treatmentProfessionalOptions(t?.professional_id||''))}
     ${field('treatment_sessions_total','Quantidade de sessões','number',sessions)}
     ${moneyField('treatment_amount','Valor do tratamento',amount)}
     <div class="field span2 patient-treatment-hint">
-      <small>Ao escolher um serviço cadastrado, o valor é preenchido automaticamente e pode ser ajustado para este paciente.</small>
+      <small>Você pode digitar o tratamento livremente. Se também escolher um serviço cadastrado, o valor será preenchido automaticamente e ainda poderá ser ajustado para este paciente.</small>
     </div>
   `;
 }
@@ -707,7 +714,7 @@ function renderPatients(){
     const age=calculateAge(p.birth_date);
     const t=patientActiveTreatment(p.id);
     const service=t?.service_id?serviceById(t.service_id):null;
-    const treatmentName=service?.name||t?.specialty||'Sem tratamento';
+    const treatmentName=t?.treatment_name||service?.name||t?.specialty||'Sem tratamento';
     const treatmentValue=t?money(t.amount_total||service?.price||0):'—';
     return `<tr>
       <td><strong>${escapeHtml(p.name)}</strong></td>
@@ -1354,12 +1361,14 @@ async function saveModal(e){
     if(type==='patient' && saved){
       const serviceId=raw.treatment_service_id||null;
       const treatmentId=raw.treatment_id||null;
-      if(serviceId){
-        const service=serviceById(serviceId);
+      const treatmentName=String(raw.treatment_name||'').trim();
+      if(serviceId || treatmentName){
+        const service=serviceId?serviceById(serviceId):null;
         const treatmentPayload={
           patient_id:saved.id,
           professional_id:raw.treatment_professional_id||null,
           service_id:serviceId,
+          treatment_name:treatmentName||service?.name||'Tratamento',
           specialty:service?.specialty||null,
           sessions_total:Math.max(1,Number(raw.treatment_sessions_total||1)),
           amount_total:parseMoneyInput(raw.treatment_amount||service?.price||0),
