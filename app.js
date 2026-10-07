@@ -1536,17 +1536,68 @@ window.deletePatientPermanently=async id=>{
   );
   if(!ok)return;
 
-  const {data,error}=await supabase.rpc('delete_patient_completely',{p_patient_id:id});
-  if(error){
-    const msg=String(error.message||'');
-    if(msg.toLowerCase().includes('caixa já fechado')||msg.toLowerCase().includes('caixa ja fechado')){
-      return toast('Este paciente possui movimentação em um caixa já fechado. Para preservar o fechamento financeiro, ele deve ser arquivado.',true);
-    }
-    return toast('Não foi possível excluir o paciente: '+msg,true);
-  }
+  try{
+    const linkedAppointments=state.agenda.filter(x=>x.patient_id===id);
+    const linkedApplications=state.applications.filter(x=>x.patient_id===id);
+    const linkedReceivables=state.receivables.filter(x=>x.patient_id===id);
+    const linkedTreatments=state.patientTreatments.filter(x=>x.patient_id===id);
+    const linkedEvolutions=state.patientEvolutions.filter(x=>x.patient_id===id);
 
-  await loadAll();
-  toast('Paciente excluído permanentemente com os registros vinculados.');
+    const appointmentIds=new Set(linkedAppointments.map(x=>x.id));
+    const applicationIds=new Set(linkedApplications.map(x=>x.id));
+    const receivableIds=new Set(linkedReceivables.map(x=>x.id));
+
+    const linkedCash=state.cashMovements.filter(x=>
+      x.patient_id===id ||
+      receivableIds.has(x.receivable_id) ||
+      applicationIds.has(x.application_id) ||
+      appointmentIds.has(x.appointment_id)
+    );
+
+    const closedCash=linkedCash.some(m=>{
+      const session=state.cashSessions.find(x=>x.id===m.session_id);
+      return session?.status==='CLOSED';
+    });
+
+    if(closedCash){
+      return toast('Este paciente possui movimentação em um caixa já fechado. Para preservar o fechamento financeiro, use Arquivar.',true);
+    }
+
+    const removeRows=async(table,rows)=>{
+      if(!rows.length)return;
+      const ids=rows.map(x=>x.id);
+      const {error}=await supabase.from(table).delete().in('id',ids);
+      if(error)throw error;
+    };
+
+    await removeRows('cash_movements',linkedCash);
+    await removeRows('patient_evolutions',linkedEvolutions);
+    await removeRows('receivables',linkedReceivables);
+    await removeRows('applications',linkedApplications);
+    await removeRows('appointments',linkedAppointments);
+    await removeRows('patient_treatments',linkedTreatments);
+
+    const {error:patientError}=await supabase.from('patients').delete().eq('id',id);
+    if(patientError)throw patientError;
+
+    await audit('DELETE_PATIENT_PERMANENT','patients',id,{
+      name:p.name,
+      removed:{
+        cash_movements:linkedCash.length,
+        evolutions:linkedEvolutions.length,
+        receivables:linkedReceivables.length,
+        applications:linkedApplications.length,
+        appointments:linkedAppointments.length,
+        treatments:linkedTreatments.length
+      }
+    });
+
+    await loadAll();
+    toast('Paciente excluído permanentemente.');
+  }catch(err){
+    console.error('Erro ao excluir paciente:',err);
+    toast('Não foi possível excluir o paciente: '+(err?.message||'erro inesperado'),true);
+  }
 };
 
 window.appDelete=async(table,id,label)=>{ if(!confirm(`Excluir ${label}?`))return; const {error}=await supabase.from(table).delete().eq('id',id); if(error)return toast(error.message,true); await audit('DELETE',table,id,{label}); await loadAll(); toast('Registro excluído.'); };
