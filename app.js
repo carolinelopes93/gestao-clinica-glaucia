@@ -181,6 +181,7 @@ function bindEvents(){
 
   el('helpSearch')?.addEventListener('input',renderHelpSearch);
   el('whatsappSupportBtn')?.addEventListener('click',()=>window.open('https://wa.me/?text='+encodeURIComponent('Olá, preciso de ajuda com o sistema Gestão Clínica.'),'_blank','noopener'));
+  el('downloadBackupBtn')?.addEventListener('click',downloadClinicBackup);
   document.addEventListener('click',e=>{
     const guide=e.target.closest('[data-help-topic]');
     if(guide){switchView('help');setTimeout(()=>document.getElementById(guide.dataset.helpTopic)?.scrollIntoView({behavior:'smooth',block:'start'}),50);}
@@ -408,6 +409,7 @@ async function enterApp(user){
   if(el('topUserRole')) el('topUserRole').textContent=(currentProfile.role||'Equipe').toUpperCase();
   renderUserAvatars();
   el('usersNavBtn')?.classList.toggle('hidden',currentProfile.role!=='admin');
+  el('backupGuide')?.classList.toggle('hidden',currentProfile.role!=='admin');
 
   let target=String(location.hash||'').replace(/^#/,'');
   if(!target){
@@ -1196,6 +1198,70 @@ function setTheme(theme,persist=true){
   const colors={rose:'#FF9EA3',blue:'#2457a6',light:'#475569',dark:'#0f172a'};
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content',colors[next]);
 }
+async function downloadClinicBackup(){
+  if(currentProfile?.role!=='admin') return toast('Somente administradores podem gerar o backup.',true);
+
+  const btn=el('downloadBackupBtn');
+  const status=el('backupStatus');
+  if(btn){btn.disabled=true;btn.textContent='Preparando backup...';}
+  if(status) status.textContent='Reunindo os dados com segurança. Aguarde alguns segundos.';
+
+  const tables=[
+    'profiles','patients','professionals','services','treatment_packages',
+    'patient_treatments','appointments','applications','receivables','expenses',
+    'cash_sessions','cash_movements','stock_items','stock_movements',
+    'team_reminders','patient_evolutions','audit_log'
+  ];
+
+  try{
+    const data={};
+    const counts={};
+    for(const table of tables){
+      const rows=await fetchAllRows(table,{pageSize:500});
+      data[table]=rows;
+      counts[table]=rows.length;
+    }
+
+    const backup={
+      backup_format:'gestao-clinica',
+      backup_version:1,
+      exported_at:new Date().toISOString(),
+      project_ref:'zrduygymmgifyffzwkud',
+      system_name:'Gestão Clínica',
+      warning:'Contém dados confidenciais de pacientes. Armazene em local privado e protegido.',
+      auth_note:'Senhas e credenciais de login não fazem parte deste arquivo.',
+      record_counts:counts,
+      tables:data
+    };
+
+    const json=JSON.stringify(backup,null,2);
+    JSON.parse(json); // valida o arquivo antes de baixar
+
+    const blob=new Blob([json],{type:'application/json;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+    const a=document.createElement('a');
+    a.href=url;
+    a.download='gestao-clinica-backup-'+stamp+'.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1500);
+
+    const total=Object.values(counts).reduce((sum,n)=>sum+Number(n||0),0);
+    if(status) status.textContent='Backup gerado com sucesso: '+total+' registros copiados.';
+    try{await audit('EXPORT_BACKUP','system','backup',{total_records:total,record_counts:counts});}catch(_e){}
+    toast('Backup baixado. Guarde o arquivo em local privado.');
+  }catch(err){
+    console.error('Erro ao gerar backup:',err);
+    if(status) status.textContent='Não foi possível gerar o backup. Tente novamente.';
+    toast('Erro ao gerar backup: '+(err?.message||'falha inesperada'),true);
+  }finally{
+    if(btn){btn.disabled=false;btn.innerHTML='<i data-lucide="download"></i> Baixar backup agora';}
+    refreshIcons();
+  }
+}
+
 function renderNotifications(){
   if(!el('notificationItems'))return;
   const today=todayISO(), pending=state.reminders.filter(r=>r.status!=='CONCLUÍDO').sort((a,b)=>String(a.date||'9999').localeCompare(String(b.date||'9999'))).slice(0,8);
