@@ -1452,19 +1452,29 @@ function parseMoneyInput(v){
   return Number.isFinite(n)?n:0;
 }
 function normalizeMoneyInput(input){
-  let raw=String(input.value||'').replace(/R\$\s?/g,'').replace(/[^0-9,]/g,'');
-  if(!raw){input.value='';return;}
-  const comma=raw.indexOf(',');
-  if(comma>=0){
-    const intPart=(raw.slice(0,comma).replace(/^0+(?=\d)/,'')||'0');
-    const decPart=raw.slice(comma+1).replace(/\D/g,'').slice(0,2);
-    input.value=intPart+','+decPart;
+  // Enquanto a pessoa digita, mantém somente números e uma vírgula.
+  // A formatação para 2 casas decimais é feita ao sair do campo.
+  let raw=String(input.value||'')
+    .replace(/R\$\s?/g,'')
+    .replace(/\./g,'')
+    .replace(/[^0-9,]/g,'');
+
+  if(!raw){
+    input.value='';
     return;
   }
-  const intPart=(raw.replace(/^0+(?=\d)/,'')||'0');
-  input.value=intPart+',00';
-  try{input.setSelectionRange(intPart.length,intPart.length);}catch(_e){}
+
+  const firstComma=raw.indexOf(',');
+  if(firstComma>=0){
+    const intDigits=raw.slice(0,firstComma).replace(/\D/g,'');
+    const intPart=(intDigits.replace(/^0+(?=\d)/,'')||'0');
+    const decPart=raw.slice(firstComma+1).replace(/\D/g,'').slice(0,2);
+    input.value=intPart+','+decPart;
+  }else{
+    input.value=raw.replace(/^0+(?=\d)/,'')||'0';
+  }
 }
+
 function moneyField(name,label,value='',opts=''){
   let display='';
   if(value!=='' && value!==null && value!==undefined){
