@@ -16,7 +16,10 @@ let currentView = 'dashboard';
 const renderedViews = new Set();
 const PERF_NAV = true;
 const perfNow = () => performance.now();
-function invalidateViews(){ renderedViews.clear(); }
+function invalidateViews(view = null){
+  if(view === null){ renderedViews.clear(); return; }
+  renderedViews.delete(view);
+}
 let modalContext = null;
 let dashboardStatusFilter = 'ALL';
 let pendingProfilePhotoDataUrl = null;
@@ -507,10 +510,11 @@ function switchView(v){
   el('topAction').classList.toggle('hidden',v==='reports'||v==='finance'||!meta[2]);
 
   const started=perfNow();
-  const reused=renderedViews.has(v);
-  if(!reused) render(v);
+  // Sempre reconstrói a tela com o estado atual; nunca reutiliza HTML antigo.
+  invalidateViews(v);
+  render(v);
   refreshIcons();
-  if(PERF_NAV) console.debug(`[perf] navegação ${v}: ${(perfNow()-started).toFixed(2)} ms (${reused?'reutilizada':'renderizada'})`);
+  if(PERF_NAV) console.debug(`[perf] navegação ${v}: ${(perfNow()-started).toFixed(2)} ms (renderizada)`);
 }
 function renderAll(){ Object.keys(viewMeta).forEach(render); }
 function render(v){
@@ -1207,8 +1211,7 @@ async function removeProfilePhoto(){
   toast('Foto removida.');
 }
 function refreshIcons(){
-  // Lucide 0.468.0 UMD: createIcons usa document.querySelectorAll internamente.
-  // Evita chamadas quando não há placeholders novos no documento.
+  // Só chama Lucide quando surgem novos placeholders de ícones.
   const pending=document.querySelectorAll('i[data-lucide]');
   if(!pending.length || !window.lucide?.createIcons) return;
   const started=perfNow();
