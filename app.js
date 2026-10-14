@@ -12,6 +12,11 @@ let supabase = null;
 let currentUser = null;
 let currentProfile = null;
 let currentView = 'dashboard';
+// Cache apenas da apresentação: nunca guarda permissões nem substitui consultas ao banco.
+const renderedViews = new Set();
+const PERF_NAV = true;
+const perfNow = () => performance.now();
+function invalidateViews(){ renderedViews.clear(); }
 let modalContext = null;
 let dashboardStatusFilter = 'ALL';
 let pendingProfilePhotoDataUrl = null;
@@ -92,6 +97,7 @@ async function boot(){
   supabase.auth.onAuthStateChange(async (_evt,session)=>{
     if(!session){
       currentUser=null;
+      invalidateViews();
       showOnly('loginScreen');
     }
   });
@@ -373,7 +379,7 @@ async function login(e){
     btn.textContent=originalText;
   }
 }
-async function logout(){ await supabase.auth.signOut(); showOnly('loginScreen'); await refreshBootstrapState(); }
+async function logout(){ invalidateViews(); await supabase.auth.signOut(); showOnly('loginScreen'); await refreshBootstrapState(); }
 function renderUserAvatars(){
   const name=(currentProfile?.full_name||currentUser?.email||'G').trim();
   const initial=(name[0]||'G').toUpperCase();
@@ -393,6 +399,7 @@ function renderUserAvatars(){
 }
 
 async function enterApp(user){
+  invalidateViews();
   currentUser=user;
   const {data}=await supabase.from('profiles').select('*').eq('id',user.id).maybeSingle();
   currentProfile=data||{full_name:user.email,role:'staff',active:true};
@@ -461,6 +468,8 @@ async function loadAll(showToast=false){
       sources.map(async([table,key])=>[key,await fetchAllRows(table)])
     );
     results.forEach(([key,rows])=>state[key]=rows);
+    // Dados recém-consultados podem ter mudado: nenhuma tela antiga permanece válida.
+    invalidateViews();
 
     if(currentProfile?.role==='admin') await loadUsers();
 
@@ -497,11 +506,19 @@ function switchView(v){
   el('topAction').textContent=meta[2];
   el('topAction').classList.toggle('hidden',v==='reports'||v==='finance'||!meta[2]);
 
-  render(v);
+  const started=perfNow();
+  const reused=renderedViews.has(v);
+  if(!reused) render(v);
   refreshIcons();
+  if(PERF_NAV) console.debug(`[perf] navegação ${v}: ${(perfNow()-started).toFixed(2)} ms (${reused?'reutilizada':'renderizada'})`);
 }
 function renderAll(){ Object.keys(viewMeta).forEach(render); }
-function render(v){({dashboard:renderDashboard,agenda:renderAgenda,patients:renderPatients,applications:renderApplications,finance:renderFinance,receivables:renderReceivables,expenses:renderExpenses,professionals:renderProfessionals,services:renderServices,stock:renderStock,reminders:renderReminders,reports:renderReports,users:renderUsers,help:()=>{}})[v]?.();}
+function render(v){
+  const started=perfNow();
+  ({dashboard:renderDashboard,agenda:renderAgenda,patients:renderPatients,applications:renderApplications,finance:renderFinance,receivables:renderReceivables,expenses:renderExpenses,professionals:renderProfessionals,services:renderServices,stock:renderStock,reminders:renderReminders,reports:renderReports,users:renderUsers,help:()=>{}})[v]?.();
+  renderedViews.add(v);
+  if(PERF_NAV) console.debug(`[perf] render ${v}: ${(perfNow()-started).toFixed(2)} ms`);
+}
 
 function renderDashboard(){
   const today=todayISO(), month=monthISO();
@@ -1189,7 +1206,13 @@ async function removeProfilePhoto(){
   if(el('profilePhotoInput')) el('profilePhotoInput').value='';
   toast('Foto removida.');
 }
-function refreshIcons(){try{window.lucide?.createIcons({attrs:{'stroke-width':1.8}});}catch(_e){}}
+function refreshIcons(){
+  // Lucide converte [data-lucide] em SVG; sem placeholders, não há trabalho a fazer.
+  if(!document.querySelector('[data-lucide]')) return;
+  const started=perfNow();
+  try{window.lucide?.createIcons({attrs:{'stroke-width':1.8}});}catch(_e){}
+  if(PERF_NAV) console.debug(`[perf] ícones: ${(perfNow()-started).toFixed(2)} ms`);
+}
 function setTheme(theme,persist=true){
   const allowed=['rose','blue','light','dark'], next=allowed.includes(theme)?theme:'rose';
   document.documentElement.dataset.theme=next;
