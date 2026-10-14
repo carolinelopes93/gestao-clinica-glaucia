@@ -1207,17 +1207,13 @@ async function removeProfilePhoto(){
   toast('Foto removida.');
 }
 function refreshIcons(){
-  // Converte somente ícones pendentes da tela ativa; elementos globais novos
-  // (menus e diálogos) também são atendidos quando existirem.
-  const view=el('view-'+currentView);
-  const globalPending=document.querySelector('body > [data-lucide], #nav [data-lucide], header [data-lucide], dialog [data-lucide], .modal [data-lucide]');
-  const root=globalPending || !view ? document : view;
-  const pending=root.querySelectorAll('[data-lucide]');
+  // Lucide 0.468.0 UMD: createIcons usa document.querySelectorAll internamente.
+  // Evita chamadas quando não há placeholders novos no documento.
+  const pending=document.querySelectorAll('i[data-lucide]');
   if(!pending.length || !window.lucide?.createIcons) return;
   const started=perfNow();
-  try{
-    window.lucide.createIcons({attrs:{'stroke-width':1.8},root});
-  }catch(err){console.warn('[perf] erro ao atualizar ícones:',err);}
+  try{window.lucide.createIcons({attrs:{'stroke-width':1.8}});}
+  catch(err){console.warn('[perf] erro ao atualizar ícones:',err);}
   if(PERF_NAV) console.debug(`[perf] ícones pendentes: ${pending.length}, ${(perfNow()-started).toFixed(2)} ms`);
 }
 function setTheme(theme,persist=true){
